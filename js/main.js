@@ -1,5 +1,5 @@
 const API_BASE_KEY = 'apiBaseUrl';
-let API = localStorage.getItem(API_BASE_KEY) || 'http://localhost:3000';
+let API = localStorage.getItem(API_BASE_KEY) || 'http://192.168.1.125:3000';
 
 async function loadData() {
   try {
