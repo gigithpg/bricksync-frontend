@@ -5,96 +5,122 @@ function log(message, level = 'log') {
   console[level](`[BrickSync ${new Date().toISOString()}] ${message}`);
 }
 
+function logLayout(message) {
+  log(`Layout: ${message}`);
+}
+
 async function loadTabContent(tab) {
-  log(`Loading tab content: ${tab}`);
+  logLayout(`Attempting to load tab content: ${tab}`);
+  const tabContent = document.getElementById('tab-content');
+  if (!tabContent) {
+    log('Tab content container not found', 'error');
+    return;
+  }
   try {
     const response = await fetch(`partials/${tab}.html`);
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     const content = await response.text();
-    const tabContent = document.getElementById('tab-content');
-    if (tabContent) {
-      tabContent.innerHTML = content;
-      log(`Tab content ${tab} loaded`);
-      // Reinitialize form listeners and Flatpickr after partial load
-      if (tab === 'sales' || tab === 'payments') {
+    tabContent.innerHTML = content;
+    logLayout(`Tab content ${tab} loaded successfully`);
+    
+    // Reinitialize form listeners and Flatpickr after partial load
+    if (tab === 'sales' || tab === 'payments') {
+      try {
         flatpickr('#sale-date', { dateFormat: 'd/m/Y' });
         flatpickr('#payment-date', { dateFormat: 'd/m/Y' });
-        log('Flatpickr reinitialized for ' + tab);
+        logLayout('Flatpickr initialized for ' + tab);
+      } catch (e) {
+        log(`Error initializing Flatpickr for ${tab}: ${e.message}`, 'error');
       }
-      if (tab === 'customers' || tab === 'sales' || tab === 'payments' || tab === 'settings') {
-        setupFormListeners(tab);
-      }
-      if (tab === 'logs') {
-        const clearLogsButton = document.getElementById('clear-logs');
-        if (clearLogsButton) {
-          clearLogsButton.addEventListener('click', clearLogs);
-          log('Clear logs button listener added');
-        } else {
-          log('Clear logs button not found', 'error');
-        }
-      }
-      // Reload data to populate dropdowns and tables
-      loadData();
-    } else {
-      log('Tab content container not found', 'error');
     }
+    setupFormListeners(tab);
+    if (tab === 'logs') {
+      const clearLogsButton = document.getElementById('clear-logs');
+      if (clearLogsButton) {
+        clearLogsButton.addEventListener('click', clearLogs);
+        logLayout('Clear logs button listener added');
+      } else {
+        log('Clear logs button not found', 'error');
+      }
+    }
+    // Reload data for the active tab
+    await loadData(tab);
+    logLayout(`Tab ${tab} fully initialized`);
   } catch (e) {
     log(`Error loading tab content ${tab}: ${e.message}`, 'error');
-    alert(`Error loading tab: ${e.message}`);
+    tabContent.innerHTML = `<p class="text-red-600 p-4">Error loading ${tab} content: ${e.message}</p>`;
   }
 }
 
-async function loadData() {
-  log('Starting data load');
+async function loadData(activeTab) {
+  log(`Starting data load for tab: ${activeTab}`);
   try {
+    // Fetch customers (needed for dropdowns and customers tab)
     log('Fetching customers');
     const customers = await fetch(`${API}/customers`).then(r => {
       if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
       return r.json();
     });
     log(`Loaded ${customers.length} customers`);
-    renderCustomers(customers);
-    populateCustomerDropdowns(customers);
+    if (activeTab === 'customers' || activeTab === 'dashboard') {
+      renderCustomers(customers);
+    }
+    populateCustomerDropdowns(customers, activeTab);
 
-    log('Fetching sales');
-    const sales = await fetch(`${API}/sales`).then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-      return r.json();
-    });
-    log(`Loaded ${sales.length} sales`);
-    renderSales(sales);
+    // Fetch and render sales
+    if (activeTab === 'sales' || activeTab === 'dashboard') {
+      log('Fetching sales');
+      const sales = await fetch(`${API}/sales`).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        return r.json();
+      });
+      log(`Loaded ${sales.length} sales`);
+      renderSales(sales, activeTab);
+    }
 
-    log('Fetching payments');
-    const payments = await fetch(`${API}/payments`).then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-      return r.json();
-    });
-    log(`Loaded ${payments.length} payments`);
-    renderPayments(payments);
+    // Fetch and render payments
+    if (activeTab === 'payments' || activeTab === 'dashboard') {
+      log('Fetching payments');
+      const payments = await fetch(`${API}/payments`).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        return r.json();
+      });
+      log(`Loaded ${payments.length} payments`);
+      renderPayments(payments, activeTab);
+    }
 
-    log('Fetching transactions');
-    const transactions = await fetch(`${API}/transactions`).then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-      return r.json();
-    });
-    log(`Loaded ${transactions.length} transactions`);
-    renderTable('transaction-table', transactions);
+    // Fetch and render transactions
+    if (activeTab === 'transactions') {
+      log('Fetching transactions');
+      const transactions = await fetch(`${API}/transactions`).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        return r.json();
+      });
+      log(`Loaded ${transactions.length} transactions`);
+      renderTable('transaction-table', transactions);
+    }
 
-    log('Fetching balances');
-    const balances = await fetch(`${API}/balances`).then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-      return r.json();
-    });
-    log(`Loaded ${balances.length} balances`);
-    renderTable('balance-table', balances);
+    // Fetch and render balances
+    if (activeTab === 'balances' || activeTab === 'dashboard') {
+      log('Fetching balances');
+      const balances = await fetch(`${API}/balances`).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        return r.json();
+      });
+      log(`Loaded ${balances.length} balances`);
+      renderTable('balance-table', balances);
+    }
 
-    log('Fetching logs');
-    const logs = await fetch(`${API}/logs`).then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-      return r.json();
-    });
-    log(`Loaded ${logs.length} logs`);
-    renderLogs(logs);
+    // Fetch and render logs
+    if (activeTab === 'logs') {
+      log('Fetching logs');
+      const logs = await fetch(`${API}/logs`).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        return r.json();
+      });
+      log(`Loaded ${logs.length} logs`);
+      renderLogs(logs);
+    }
   } catch (e) {
     log(`Error loading data: ${e.message}`, 'error');
     alert(`Error loading data: ${e.message}. Check API URL in Settings.`);
@@ -102,7 +128,7 @@ async function loadData() {
 }
 
 function renderTable(tableId, data) {
-  log(`Rendering table ${tableId} with ${data.length} rows`);
+  logLayout(`Rendering table ${tableId} with ${data.length} rows`);
   const table = document.getElementById(tableId);
   if (!table) {
     log(`Table ${tableId} not found`, 'error');
@@ -130,26 +156,34 @@ function renderTable(tableId, data) {
       }).join('')}${tableId.includes('customer') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700" onclick="deleteCustomer('${row['Customer ID']}')">Delete</button></td>` : ''}${tableId.includes('sale') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700" onclick="deleteSale('${row['Sale ID']}')">Delete</button></td>` : ''}${tableId.includes('payment') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700" onclick="deletePayment('${row['Payment ID']}')">Delete</button></td>` : ''}</tr>
     `).join('')}</tbody>
   `;
-  log(`Table ${tableId} rendered successfully`);
+  logLayout(`Table ${tableId} rendered successfully`);
 }
 
 function renderCustomers(customers) {
-  log(`Rendering customers table with ${customers.length} customers`);
+  logLayout(`Rendering customers table with ${customers.length} customers`);
   renderTable('customer-table', customers);
 }
 
-function renderSales(sales) {
-  log(`Rendering sales table with ${sales.length} sales`);
-  renderTable('sales-table', sales);
+function renderSales(sales, activeTab) {
+  logLayout(`Rendering sales table with ${sales.length} sales for tab ${activeTab}`);
+  if (activeTab === 'dashboard') {
+    renderTable('recent-sales-table', sales.slice(0, 5)); // Limit to 5 for dashboard
+  } else {
+    renderTable('sales-table', sales);
+  }
 }
 
-function renderPayments(payments) {
-  log(`Rendering payments table with ${payments.length} payments`);
-  renderTable('payment-table', payments);
+function renderPayments(payments, activeTab) {
+  logLayout(`Rendering payments table with ${payments.length} payments for tab ${activeTab}`);
+  if (activeTab === 'dashboard') {
+    renderTable('recent-payments-table', payments.slice(0, 5)); // Limit to 5 for dashboard
+  } else {
+    renderTable('payment-table', payments);
+  }
 }
 
 function renderLogs(logs) {
-  log(`Rendering logs with ${logs.length} entries`);
+  logLayout(`Rendering logs with ${logs.length} entries`);
   const logList = document.getElementById('log-list');
   if (!logList) {
     log('Log list not found', 'error');
@@ -163,18 +197,30 @@ function renderLogs(logs) {
   logList.innerHTML = logs.map(log => `
     <li class="text-sm text-gray-900">${log.Timestamp}: ${log.Message}</li>
   `).join('');
-  log('Logs rendered successfully');
+  logLayout('Logs rendered successfully');
 }
 
-function populateCustomerDropdowns(customers) {
-  log(`Populating customer dropdowns with ${customers.length} customers`);
+function populateCustomerDropdowns(customers, activeTab) {
+  logLayout(`Populating customer dropdowns with ${customers.length} customers for tab ${activeTab}`);
   const opts = customers.map(c => `<option value="${c['Customer Name']}">${c['Customer Name']}</option>`).join('');
-  const saleCustomer = document.getElementById('sale-customer');
-  const paymentCustomer = document.getElementById('payment-customer');
-  if (saleCustomer) saleCustomer.innerHTML = `<option value="">Select Customer</option>${opts}`;
-  else log('Sale customer dropdown not found', 'error');
-  if (paymentCustomer) paymentCustomer.innerHTML = `<option value="">Select Customer</option>${opts}`;
-  else log('Payment customer dropdown not found', 'error');
+  if (activeTab === 'sales' || activeTab === 'dashboard') {
+    const saleCustomer = document.getElementById('sale-customer');
+    if (saleCustomer) {
+      saleCustomer.innerHTML = `<option value="">Select Customer</option>${opts}`;
+      logLayout('Sale customer dropdown populated');
+    } else {
+      log('Sale customer dropdown not found', 'error');
+    }
+  }
+  if (activeTab === 'payments' || activeTab === 'dashboard') {
+    const paymentCustomer = document.getElementById('payment-customer');
+    if (paymentCustomer) {
+      paymentCustomer.innerHTML = `<option value="">Select Customer</option>${opts}`;
+      logLayout('Payment customer dropdown populated');
+    } else {
+      log('Payment customer dropdown not found', 'error');
+    }
+  }
 }
 
 async function deleteCustomer(id) {
@@ -183,7 +229,7 @@ async function deleteCustomer(id) {
     const res = await fetch(`${API}/customers/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete customer');
     log(`Customer ${id} deleted successfully`);
-    loadData();
+    await loadData(document.querySelector('.tab-button.active')?.dataset.tab || 'dashboard');
   } catch (e) {
     log(`Error deleting customer ${id}: ${e.message}`, 'error');
     alert(`Error: ${e.message}`);
@@ -196,7 +242,7 @@ async function deleteSale(id) {
     const res = await fetch(`${API}/sales/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete sale');
     log(`Sale ${id} deleted successfully`);
-    loadData();
+    await loadData(document.querySelector('.tab-button.active')?.dataset.tab || 'dashboard');
   } catch (e) {
     log(`Error deleting sale ${id}: ${e.message}`, 'error');
     alert(`Error: ${e.message}`);
@@ -209,7 +255,7 @@ async function deletePayment(id) {
     const res = await fetch(`${API}/payments/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete payment');
     log(`Payment ${id} deleted successfully`);
-    loadData();
+    await loadData(document.querySelector('.tab-button.active')?.dataset.tab || 'dashboard');
   } catch (e) {
     log(`Error deleting payment ${id}: ${e.message}`, 'error');
     alert(`Error: ${e.message}`);
@@ -217,12 +263,12 @@ async function deletePayment(id) {
 }
 
 async function clearLogs() {
-  log('Clearing logs');
+  log(`Clearing logs`);
   try {
     const res = await fetch(`${API}/logs`, { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to clear logs');
-    log('Logs cleared successfully');
-    loadData();
+    log(`Logs cleared successfully`);
+    await loadData('logs');
   } catch (e) {
     log(`Error clearing logs: ${e.message}`, 'error');
     alert(`Error: ${e.message}`);
@@ -236,14 +282,14 @@ function updateSaleAmount() {
   const amountInput = document.getElementById('sale-amount');
   if (amountInput) {
     amountInput.value = (qty * rate + rent).toFixed(2);
-    log(`Updated sale amount: ${(qty * rate + rent).toFixed(2)}`);
+    logLayout(`Updated sale amount: ${(qty * rate + rent).toFixed(2)}`);
   } else {
     log('Sale amount input not found', 'error');
   }
 }
 
 function setupFormListeners(tab) {
-  log(`Setting up form listeners for tab: ${tab}`);
+  logLayout(`Setting up form listeners for tab: ${tab}`);
   if (tab === 'customers') {
     const customerForm = document.getElementById('customer-form');
     if (customerForm) {
@@ -265,18 +311,19 @@ function setupFormListeners(tab) {
           if (!res.ok) throw new Error((await res.json()).error || 'Failed to add customer');
           log(`Customer ${name} added successfully`);
           e.target.reset();
-          loadData();
+          await loadData('customers');
         } catch (e) {
           log(`Error adding customer: ${e.message}`, 'error');
           alert(`Error: ${e.message}`);
         }
       });
+      logLayout('Customer form listener added');
     } else {
       log('Customer form not found', 'error');
     }
   }
 
-  if (tab === 'sales') {
+  if (tab === 'sales' || tab === 'dashboard') {
     const salesForm = document.getElementById('sales-form');
     if (salesForm) {
       salesForm.addEventListener('submit', async (e) => {
@@ -308,24 +355,37 @@ function setupFormListeners(tab) {
             body: JSON.stringify(saleData)
           });
           if (!res.ok) throw new Error((await res.json()).error || 'Failed to add sale');
-          log('Sale added successfully');
+          log(`Sale added successfully`);
           e.target.reset();
-          loadData();
+          await loadData(tab);
         } catch (e) {
           log(`Error adding sale: ${e.message}`, 'error');
           alert(`Error: ${e.message}`);
         }
       });
+      logLayout('Sales form listener added');
       const saleQty = document.getElementById('sale-quantity');
       const saleRate = document.getElementById('sale-rate');
       const saleRent = document.getElementById('sale-vehicle-rent');
-      if (saleQty) saleQty.addEventListener('input', updateSaleAmount);
-      else log('Sale quantity input not found', 'error');
-      if (saleRate) saleRate.addEventListener('input', updateSaleAmount);
-      else log('Sale rate input not found', 'error');
-      if (saleRent) saleRent.addEventListener('input', updateSaleAmount);
-      else log('Sale vehicle rent input not found', 'error');
       const saleMethod = document.getElementById('sale-payment-method');
+      if (saleQty) {
+        saleQty.addEventListener('input', updateSaleAmount);
+        logLayout('Sale quantity listener added');
+      } else {
+        log('Sale quantity input not found', 'error');
+      }
+      if (saleRate) {
+        saleRate.addEventListener('input', updateSaleAmount);
+        logLayout('Sale rate listener added');
+      } else {
+        log('Sale rate input not found', 'error');
+      }
+      if (saleRent) {
+        saleRent.addEventListener('input', updateSaleAmount);
+        logLayout('Sale vehicle rent listener added');
+      } else {
+        log('Sale vehicle rent input not found', 'error');
+      }
       if (saleMethod) {
         saleMethod.addEventListener('change', (e) => {
           const salePaid = document.getElementById('sale-payment-received');
@@ -337,6 +397,7 @@ function setupFormListeners(tab) {
             log('Sale payment received input not found', 'error');
           }
         });
+        logLayout('Sale payment method listener added');
       } else {
         log('Sale payment method input not found', 'error');
       }
@@ -345,7 +406,7 @@ function setupFormListeners(tab) {
     }
   }
 
-  if (tab === 'payments') {
+  if (tab === 'payments' || tab === 'dashboard') {
     const paymentsForm = document.getElementById('payment-form');
     if (paymentsForm) {
       paymentsForm.addEventListener('submit', async (e) => {
@@ -362,7 +423,7 @@ function setupFormListeners(tab) {
         if (!paymentData['Customer Name']) return alert('Please select a customer');
         if (!paymentData.Date) return alert('Please select a date');
         if (!paymentData['Payment Method']) return alert('Please select a payment method');
-        if (isNaN(paymentData['Payment Received') || paymentData['Payment Received'] <= 0) {
+        if (isNaN(paymentData['Payment Received']) || paymentData['Payment Received'] <= 0) {
           return alert('Payment Received must be a positive number');
         }
         try {
@@ -372,14 +433,15 @@ function setupFormListeners(tab) {
             body: JSON.stringify(paymentData)
           });
           if (!res.ok) throw new Error((await res.json()).error || 'Failed to add payment');
-          log('Payment added successfully');
+          log(`Payment added successfully`);
           e.target.reset();
-          loadData();
+          await loadData(tab);
         } catch (e) {
           log(`Error adding payment: ${e.message}`, 'error');
           alert(`Error: ${e.message}`);
         }
       });
+      logLayout('Payments form listener added');
     } else {
       log('Payments form not found', 'error');
     }
@@ -388,7 +450,7 @@ function setupFormListeners(tab) {
   if (tab === 'settings') {
     const settingsForm = document.getElementById('settings-form');
     if (settingsForm) {
-      settingsForm.addEventListener('submit', (e) => {
+      settingsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const apiUrl = document.getElementById('api-url')?.value.trim();
         log(`Submitting settings form: API URL ${apiUrl}`);
@@ -401,8 +463,16 @@ function setupFormListeners(tab) {
         API = apiUrl;
         log(`API URL updated to ${apiUrl}`);
         alert('API URL updated. Reloading data...');
-        loadData();
+        await loadData('settings');
       });
+      logLayout('Settings form listener added');
+      const apiUrlInput = document.getElementById('api-url');
+      if (apiUrlInput) {
+        apiUrlInput.value = API;
+        logLayout(`API URL input initialized: ${API}`);
+      } else {
+        log('API URL input not found', 'error');
+      }
     } else {
       log('Settings form not found', 'error');
     }
@@ -410,25 +480,42 @@ function setupFormListeners(tab) {
 }
 
 function setupEventListeners() {
-  log('Setting up event listeners');
+  logLayout('Setting up event listeners');
+  const nav = document.querySelector('nav');
+  if (nav) {
+    logLayout('Navigation bar found');
+  } else {
+    log('Navigation bar not found', 'error');
+  }
+  const tabContent = document.getElementById('tab-content');
+  if (tabContent) {
+    logLayout('Tab content container found');
+  } else {
+    log('Tab content container not found', 'error');
+  }
   const tabButtons = document.querySelectorAll('.tab-button');
   if (tabButtons.length) {
+    logLayout(`Found ${tabButtons.length} tab buttons`);
     tabButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        log(`Switching to tab: ${button.dataset.tab}`);
-        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active', 'bg-blue-600', 'text-white', 'md:bg-blue-100'));
+      button.addEventListener('click', async () => {
+        logLayout(`Switching to tab: ${button.dataset.tab}`);
+        document.querySelectorAll('.tab-button').forEach(btn => {
+          btn.classList.remove('active', 'bg-blue-600', 'text-white', 'md:bg-blue-100');
+          logLayout(`Removed active classes from button: ${btn.dataset.tab}`);
+        });
         button.classList.add('active', 'bg-blue-600', 'text-white', 'md:bg-blue-100');
-        loadTabContent(button.dataset.tab);
+        logLayout(`Added active classes to button: ${button.dataset.tab}`);
+        await loadTabContent(button.dataset.tab);
       });
     });
   } else {
     log('No tab buttons found', 'error');
   }
-  log('Event listeners setup complete');
+  logLayout('Event listeners setup complete');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  log('DOM content loaded');
-  setupEventListeners();
-  loadTabContent('dashboard');
+document.addEventListener('DOMContentLoaded', async () => {
+  logLayout('DOM content loaded');
+  await setupEventListeners();
+  await loadTabContent('dashboard');
 });

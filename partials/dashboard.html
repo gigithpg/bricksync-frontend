@@ -1,4 +1,118 @@
-<div class="bg-white p-6 rounded-lg shadow-md">
+<div class="bg-white p-6 rounded-lg shadow-md space-y-6">
   <h2 class="text-xl font-semibold mb-4">Dashboard</h2>
-  <p class="text-gray-600">Welcome to BrickSync. Select a tab to manage customers, sales, or payments.</p>
+  <p class="text-gray-600 mb-4">Quick overview of your BrickSync data.</p>
+
+  <!-- Quick Actions -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <h3 class="text-lg font-medium mb-2">Add Sale</h3>
+      <form id="sales-form" class="space-y-4">
+        <div>
+          <label for="sale-customer" class="block text-sm font-medium text-gray-700">Customer Name</label>
+          <select id="sale-customer" name="Customer Name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"></select>
+        </div>
+        <div>
+          <label for="sale-date" class="block text-sm font-medium text-gray-700">Date</label>
+          <input type="text" id="sale-date" name="Date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2" placeholder="Select date">
+        </div>
+        <div>
+          <label for="sale-quantity" class="block text-sm font-medium text-gray-700">Quantity (MT)</label>
+          <input type="number" id="sale-quantity" name="Quantity" min="0" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
+        </div>
+        <div>
+          <label for="sale-rate" class="block text-sm font-medium text-gray-700">Rate (per MT)</label>
+          <input type="number" id="sale-rate" name="Rate" min="0" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
+        </div>
+        <div>
+          <label for="sale-vehicle-rent" class="block text-sm font-medium text-gray-700">Vehicle Rent</label>
+          <input type="number" id="sale-vehicle-rent" name="Vehicle Rent" min="0" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
+        </div>
+        <div>
+          <label for="sale-amount" class="block text-sm font-medium text-gray-700">Amount</label>
+          <input type="number" id="sale-amount" name="Amount" readonly class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 sm:text-sm p-2">
+        </div>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">Add Sale</button>
+      </form>
+    </div>
+    <div>
+      <h3 class="text-lg font-medium mb-2">Add Payment</h3>
+      <form id="payment-form" class="space-y-4">
+        <div>
+          <label for="payment-customer" class="block text-sm font-medium text-gray-700">Customer Name</label>
+          <select id="payment-customer" name="Customer Name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"></select>
+        </div>
+        <div>
+          <label for="payment-date" class="block text-sm font-medium text-gray-700">Date</label>
+          <input type="text" id="payment-date" name="Date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2" placeholder="Select date">
+        </div>
+        <div>
+          <label for="payment-method" class="block text-sm font-medium text-gray-700">Payment Method</label>
+          <select id="payment-method" name="Payment Method" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
+            <option value="Cash">Cash</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
+        <div>
+          <label for="payment-received" class="block text-sm font-medium text-gray-700">Payment Received</label>
+          <input type="number" id="payment-received" name="Payment Received" min="0" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
+        </div>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">Add Payment</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Recent Sales -->
+  <div>
+    <h3 class="text-lg font-medium mb-2">Recent Sales (Last 5)</h3>
+    <div class="overflow-x-auto">
+      <table id="recent-sales-table" class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Payments -->
+  <div>
+    <h3 class="text-lg font-medium mb-2">Recent Payments (Last 5)</h3>
+    <div class="overflow-x-auto">
+      <table id="recent-payments-table" class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Received</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Balances -->
+  <div>
+    <h3 class="text-lg font-medium mb-2">Customer Balances</h3>
+    <div class="overflow-x-auto">
+      <table id="balance-table" class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pending Balance</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
