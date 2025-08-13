@@ -1,3 +1,1 @@
-node_modules
-*.log
-db.json  # Don't commit sensitive data
+"node_modules\n*.log" 
