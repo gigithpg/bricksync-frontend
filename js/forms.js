@@ -1,5 +1,5 @@
-import { log, API, loadData, showToast } from './api.js';
-import { logLayout, showLoadingSpinner, hideLoadingSpinner } from './ui.js';
+import { log, API, loadData } from './api.js';
+import { logLayout, showToast, showLoadingSpinner, hideLoadingSpinner } from './ui.js';
 
 export function updateSaleAmount() {
   const qty = parseFloat(document.getElementById('sale-quantity')?.value) || 0;
@@ -46,7 +46,8 @@ export function setupFormListeners(tab, renderFunctions) {
           log(`Customer ${name} added successfully`);
           showToast('Customer added successfully');
           customerForm.reset();
-          await loadData('customers', showToast, renderFunctions);
+          await loadData('customers', renderFunctions);
+          showToast('Customer added successfully');
         } catch (e) {
           log(`Error adding customer: ${e.message}`, 'error');
           showToast(`Error: ${e.message}`);
@@ -130,7 +131,7 @@ export function setupFormListeners(tab, renderFunctions) {
           log(`Sale added successfully`);
           showToast('Sale added successfully');
           salesForm.reset();
-          await loadData(tab, showToast, renderFunctions);
+          await loadData(tab, renderFunctions);
         } catch (e) {
           log(`Error adding sale: ${e.message}`, 'error');
           showToast(`Error: ${e.message}`);
@@ -240,7 +241,7 @@ export function setupFormListeners(tab, renderFunctions) {
           log(`Payment added successfully`);
           showToast('Payment added successfully');
           paymentsForm.reset();
-          await loadData(tab, showToast, renderFunctions);
+          await loadData(tab, renderFunctions);
         } catch (e) {
           log(`Error adding payment: ${e.message}`, 'error');
           showToast(`Error: ${e.message}`);
@@ -256,8 +257,9 @@ export function setupFormListeners(tab, renderFunctions) {
     }
   }
 
-  if (tab === 'settings') {
-    const settingsForm = document.getElementById('settings-form');
+  if (tab === 'settings' || tab === 'landing') {
+    const formId = tab === 'settings' ? 'settings-form' : 'landing-form';
+    const settingsForm = document.getElementById(formId);
     if (settingsForm) {
       settingsForm.reset();
       settingsForm.addEventListener('submit', async (e) => {
@@ -267,7 +269,7 @@ export function setupFormListeners(tab, renderFunctions) {
         submitButton.textContent = 'Saving...';
         settingsForm.classList.add('opacity-50', 'pointer-events-none');
         const deviceType = document.getElementById('device-type')?.value;
-        log(`Submitting settings form: Device Type ${deviceType}`);
+        log(`Submitting ${tab} form: Device Type ${deviceType}`);
         if (!deviceType) {
           log('Device type is empty', 'error');
           showToast('Please select a device type');
@@ -283,17 +285,22 @@ export function setupFormListeners(tab, renderFunctions) {
           localStorage.setItem('apiValid', apiUrl);
           log(`API URL updated to ${apiUrl}`);
           showToast('API URL updated successfully');
-          await loadData('settings', showToast, renderFunctions);
+          if (tab === 'landing') {
+            await loadData('dashboard', renderFunctions);
+            document.querySelector('.tab-button[data-tab="dashboard"]').click();
+          } else {
+            await loadData('settings', renderFunctions);
+          }
         } catch (e) {
           log(`Error updating settings: ${e.message}`, 'error');
           showToast(`Error: ${e.message}`);
         } finally {
           submitButton.disabled = false;
-          submitButton.textContent = 'Save';
+          submitButton.textContent = tab === 'landing' ? 'Continue' : 'Save';
           settingsForm.classList.remove('opacity-50', 'pointer-events-none');
         }
       });
-      logLayout('Settings form listener added');
+      logLayout(`${tab} form listener added`);
       const deviceTypeSelect = document.getElementById('device-type');
       if (deviceTypeSelect) {
         deviceTypeSelect.value = API === 'http://localhost:3000' ? 'mobile' : 'desktop';
@@ -302,7 +309,7 @@ export function setupFormListeners(tab, renderFunctions) {
         log('Device type select not found', 'error');
       }
     } else {
-      log('Settings form not found', 'error');
+      log(`${tab} form not found`, 'error');
     }
   }
 }

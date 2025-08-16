@@ -53,14 +53,14 @@ async function loadTabContent(tab) {
     if (tab === 'logs') {
       const clearLogsButton = document.getElementById('clear-logs');
       if (clearLogsButton) {
-        clearLogsButton.addEventListener('click', () => clearLogs(showToast, loadData));
+        clearLogsButton.addEventListener('click', () => clearLogs(loadData));
         logLayout('Clear logs button listener added');
       } else {
         log('Clear logs button not found', 'error');
       }
     }
     showLoadingSpinner(tab);
-    await loadData(tab, showToast, renderFunctions);
+    await loadData(tab, renderFunctions);
     hideLoadingSpinner(tab);
     logLayout(`Tab ${tab} fully initialized`);
     if (window.innerWidth < 768) {
@@ -69,6 +69,7 @@ async function loadTabContent(tab) {
   } catch (e) {
     log(`Error loading tab content ${tab}: ${e.message}`, 'error');
     tabContent.innerHTML = `<p class="text-red-600 p-4">Error loading ${tab} content: ${e.message}</p>`;
+    showToast(`Error loading ${tab}: ${e.message}`);
   }
 }
 
@@ -123,14 +124,14 @@ function setupEventListeners() {
     }
   });
 
-  // Add delete listeners for tables
+  // Add delete listeners
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('delete-customer')) {
-      deleteCustomer(e.target.dataset.name, showToast, loadData);
+      deleteCustomer(e.target.dataset.name, loadData).then(() => showToast('Customer deleted successfully')).catch(e => showToast(e.message));
     } else if (e.target.classList.contains('delete-sale')) {
-      deleteSale(e.target.dataset.id, showToast, loadData);
+      deleteSale(e.target.dataset.id, loadData).then(() => showToast('Sale deleted successfully')).catch(e => showToast(e.message));
     } else if (e.target.classList.contains('delete-payment')) {
-      deletePayment(e.target.dataset.id, showToast, loadData);
+      deletePayment(e.target.dataset.id, loadData).then(() => showToast('Payment deleted successfully')).catch(e => showToast(e.message));
     }
   });
 
