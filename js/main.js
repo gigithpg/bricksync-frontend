@@ -1,4 +1,5 @@
 const API_BASE_KEY = 'apiBaseUrl';
+const ACTIVE_TAB_KEY = 'activeTab';
 let API = localStorage.getItem(API_BASE_KEY) || 'http://192.168.1.125:3000';
 
 function log(message, level = 'log') {
@@ -9,8 +10,29 @@ function logLayout(message) {
   log(`Layout: ${message}`);
 }
 
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  if (toast) {
+    toast.textContent = message;
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 3000);
+    logLayout(`Toast shown: ${message}`);
+  }
+}
+
+function showLoadingSpinner(tab) {
+  const spinner = document.getElementById(`loading-spinner-${tab}`);
+  if (spinner) spinner.classList.remove('hidden');
+}
+
+function hideLoadingSpinner(tab) {
+  const spinner = document.getElementById(`loading-spinner-${tab}`);
+  if (spinner) spinner.classList.add('hidden');
+}
+
 async function loadTabContent(tab) {
   logLayout(`Attempting to load tab content: ${tab}`);
+  localStorage.setItem(ACTIVE_TAB_KEY, tab);
   const tabContent = document.getElementById('tab-content');
   if (!tabContent) {
     log('Tab content container not found', 'error');
@@ -23,16 +45,24 @@ async function loadTabContent(tab) {
     tabContent.innerHTML = content;
     logLayout(`Tab content ${tab} loaded successfully`);
     
-    // Reinitialize form listeners and Flatpickr after partial load
+    // Initialize Flatpickr
+    let flatpickrInstances = [];
     if (tab === 'sales' || tab === 'payments') {
       try {
-        flatpickr('#sale-date', { dateFormat: 'd/m/Y' });
-        flatpickr('#payment-date', { dateFormat: 'd/m/Y' });
+        flatpickrInstances.push(flatpickr('#sale-date', { dateFormat: 'd/m/Y', closeOnSelect: true }));
+        flatpickrInstances.push(flatpickr('#payment-date', { dateFormat: 'd/m/Y', closeOnSelect: true }));
         logLayout('Flatpickr initialized for ' + tab);
       } catch (e) {
         log(`Error initializing Flatpickr for ${tab}: ${e.message}`, 'error');
       }
     }
+    // Close Flatpickr on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.flatpickr-calendar')) {
+        flatpickrInstances.forEach(instance => instance.close());
+      }
+    }, { once: true });
+    
     setupFormListeners(tab);
     if (tab === 'logs') {
       const clearLogsButton = document.getElementById('clear-logs');
@@ -43,10 +73,10 @@ async function loadTabContent(tab) {
         log('Clear logs button not found', 'error');
       }
     }
-    // Reload data for the active tab
+    showLoadingSpinner(tab);
     await loadData(tab);
+    hideLoadingSpinner(tab);
     logLayout(`Tab ${tab} fully initialized`);
-    // Collapse sidebar on tab click in mobile view
     if (window.innerWidth < 768) {
       toggleSidebar(false);
     }
@@ -59,7 +89,8 @@ async function loadTabContent(tab) {
 async function loadData(activeTab) {
   log(`Starting data load for tab: ${activeTab}`);
   try {
-    // Fetch customers (needed for dropdowns and customers tab)
+    showLoadingSpinner(activeTab);
+    // Fetch customers
     log('Fetching customers');
     const customers = await fetch(`${API}/customers`).then(r => {
       if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
@@ -67,9 +98,9 @@ async function loadData(activeTab) {
     });
     log(`Loaded ${customers.length} customers`);
     if (activeTab === 'customers') {
-      renderCustomers(customers);
+      renderCustomers(customers, activeTab);
     }
-    if (activeTab === 'sales' || activeTab === 'payments') {
+    if (activeTab === 'sales' || activeTab === 'payments' || activeTab === 'transactions') {
       populateCustomerDropdowns(customers, activeTab);
     }
     if (activeTab === 'dashboard') {
@@ -77,25 +108,31 @@ async function loadData(activeTab) {
     }
 
     // Fetch and render sales
-    if (activeTab === 'sales' || activeTab === 'dashboard') {
+    let sales = [];
+    if (activeTab === 'sales' || activeTab === 'dashboard' || activeTab === 'transactions') {
       log('Fetching sales');
-      const sales = await fetch(`${API}/sales`).then(r => {
+      sales = await fetch(`${API}/sales`).then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
         return r.json();
       });
       log(`Loaded ${sales.length} sales`);
-      renderSales(sales, activeTab);
+      if (activeTab === 'sales') {
+        renderSales(sales, activeTab);
+      }
     }
 
     // Fetch and render payments
-    if (activeTab === 'payments' || activeTab === 'dashboard') {
+    let payments = [];
+    if (activeTab === 'payments' || activeTab === 'dashboard' || activeTab === 'transactions') {
       log('Fetching payments');
-      const payments = await fetch(`${API}/payments`).then(r => {
+      payments = await fetch(`${API}/payments`).then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
         return r.json();
       });
       log(`Loaded ${payments.length} payments`);
-      renderPayments(payments, activeTab);
+      if (activeTab === 'payments') {
+        renderPayments(payments, activeTab);
+      }
     }
 
     // Fetch and render transactions
@@ -106,7 +143,7 @@ async function loadData(activeTab) {
         return r.json();
       });
       log(`Loaded ${transactions.length} transactions`);
-      renderTable('transaction-table', transactions);
+      renderTable('transaction-table', transactions, activeTab);
     }
 
     // Fetch and render balances
@@ -118,9 +155,9 @@ async function loadData(activeTab) {
       });
       log(`Loaded ${balances.length} balances`);
       if (activeTab === 'dashboard') {
-        renderDashboardCharts(balances, [], []); // Pass sales and payments later if needed
+        renderDashboardCharts(balances, sales, payments);
       } else {
-        renderTable('balance-table', balances);
+        renderTable('balance-table', balances, activeTab);
       }
     }
 
@@ -137,10 +174,12 @@ async function loadData(activeTab) {
   } catch (e) {
     log(`Error loading data: ${e.message}`, 'error');
     alert(`Error loading data: ${e.message}. Check API URL in Settings.`);
+  } finally {
+    hideLoadingSpinner(activeTab);
   }
 }
 
-function renderTable(tableId, data) {
+function renderTable(tableId, data, activeTab, sortBy = null, sortOrder = 'asc') {
   logLayout(`Rendering table ${tableId} with ${data.length} rows`);
   const table = document.getElementById(tableId);
   if (!table) {
@@ -152,12 +191,21 @@ function renderTable(tableId, data) {
     log(`No data for table ${tableId}`);
     return;
   }
+  // Sort data if needed
+  let sortedData = [...data];
+  if (sortBy === 'Date') {
+    sortedData.sort((a, b) => {
+      const dateA = new Date(a[sortBy].split('/').reverse().join('-'));
+      const dateB = new Date(b[sortBy].split('/').reverse().join('-'));
+      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+    });
+  }
   const headers = Object.keys(data[0]);
   table.innerHTML = `
     <thead class="bg-slate-50">
-      <tr>${headers.map(h => `<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">${h}</th>`).join('')}${tableId.includes('customer') || tableId.includes('sale') || tableId.includes('payment') ? '<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>' : ''}</tr>
+      <tr>${headers.map(h => `<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer" data-sort="${h}">${h}${h === 'Date' ? `<span class="ml-2">${sortBy === 'Date' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}</span>` : ''}</th>`).join('')}${tableId.includes('customer') || tableId.includes('sale') || tableId.includes('payment') ? '<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>' : ''}</tr>
     </thead>
-    <tbody class="bg-white divide-y divide-slate-200">${data.map(row => `
+    <tbody class="bg-white divide-y divide-slate-200">${sortedData.map(row => `
       <tr>${headers.map(h => {
         if (h === 'Pending Balance') {
           const value = row[h];
@@ -166,15 +214,50 @@ function renderTable(tableId, data) {
           return `<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 ${color}">${formatted}</td>`;
         }
         return `<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">${row[h]}</td>`;
-      }).join('')}${tableId.includes('customer') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors" onclick="deleteCustomer('${row['Customer ID']}')">Delete</button></td>` : ''}${tableId.includes('sale') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors" onclick="deleteSale('${row['Sale ID']}')">Delete</button></td>` : ''}${tableId.includes('payment') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors" onclick="deletePayment('${row['Payment ID']}')">Delete</button></td>` : ''}</tr>
+      }).join('')}${tableId.includes('customer') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-customer" data-id="${row['Customer ID']}">Delete</button></td>` : ''}${tableId.includes('sale') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-sale" data-id="${row['Sale ID']}">Delete</button></td>` : ''}${tableId.includes('payment') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-payment" data-id="${row['Payment ID']}">Delete</button></td>` : ''}</tr>
     `).join('')}</tbody>
   `;
+  // Add sort listeners
+  document.querySelectorAll(`#${tableId} th[data-sort="Date"]`).forEach(th => {
+    th.addEventListener('click', () => {
+      const newSortOrder = sortBy === 'Date' && sortOrder === 'asc' ? 'desc' : 'asc';
+      renderTable(tableId, data, activeTab, 'Date', newSortOrder);
+    });
+  });
+  // Add filter listeners
+  if (tableId.includes('sale') || tableId.includes('payment')) {
+    const filter = document.getElementById(`${tableId}-filter-customer`);
+    if (filter) {
+      filter.addEventListener('change', (e) => {
+        const filteredData = e.target.value ? data.filter(row => row['Customer Name'] === e.target.value) : data;
+        renderTable(tableId, filteredData, activeTab, sortBy, sortOrder);
+      });
+    }
+  }
+  if (tableId === 'transaction-table') {
+    const customerFilter = document.getElementById('transaction-table-filter-customer');
+    const typeFilter = document.getElementById('transaction-table-filter-type');
+    if (customerFilter && typeFilter) {
+      const applyFilters = () => {
+        let filteredData = [...data];
+        if (customerFilter.value) {
+          filteredData = filteredData.filter(row => row['Customer Name'] === customerFilter.value);
+        }
+        if (typeFilter.value) {
+          filteredData = filteredData.filter(row => row.Type === typeFilter.value);
+        }
+        renderTable(tableId, filteredData, activeTab, sortBy, sortOrder);
+      };
+      customerFilter.addEventListener('change', applyFilters);
+      typeFilter.addEventListener('change', applyFilters);
+    }
+  }
   logLayout(`Table ${tableId} rendered successfully`);
 }
 
-function renderCustomers(customers) {
+function renderCustomers(customers, activeTab) {
   logLayout(`Rendering customers table with ${customers.length} customers`);
-  renderTable('customer-table', customers);
+  renderTable('customer-table', customers, activeTab);
 }
 
 function renderSales(sales, activeTab) {
@@ -182,7 +265,7 @@ function renderSales(sales, activeTab) {
   if (activeTab === 'dashboard') {
     renderDashboardCharts([], sales, []);
   } else {
-    renderTable('sales-table', sales);
+    renderTable('sales-table', sales, activeTab);
   }
 }
 
@@ -191,7 +274,7 @@ function renderPayments(payments, activeTab) {
   if (activeTab === 'dashboard') {
     renderDashboardCharts([], [], payments);
   } else {
-    renderTable('payment-table', payments);
+    renderTable('payment-table', payments, activeTab);
   }
 }
 
@@ -228,6 +311,7 @@ function renderDashboardCharts(balances, sales, payments) {
   logLayout('Rendering dashboard charts');
   const salesChartCanvas = document.getElementById('sales-chart');
   const paymentChartCanvas = document.getElementById('payment-chart');
+  const balanceChartCanvas = document.getElementById('balance-chart');
 
   if (salesChartCanvas && sales.length) {
     const salesByDate = sales.reduce((acc, sale) => {
@@ -273,6 +357,31 @@ function renderDashboardCharts(balances, sales, payments) {
     logLayout('Payment chart rendered');
   }
 
+  if (balanceChartCanvas && balances.length) {
+    const balanceByCustomer = balances.reduce((acc, b) => {
+      acc[b['Customer Name']] = b['Pending Balance'];
+      return acc;
+    }, {});
+    new Chart(balanceChartCanvas, {
+      type: 'line',
+      data: {
+        labels: Object.keys(balanceByCustomer),
+        datasets: [{
+          label: 'Pending Balance',
+          data: Object.values(balanceByCustomer),
+          borderColor: 'rgba(16, 185, 129, 1)',
+          fill: false
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+    logLayout('Balance chart rendered');
+  }
+
   if (balances && balances.length) {
     const totalBalanceCard = document.getElementById('total-balance');
     if (totalBalanceCard) {
@@ -280,8 +389,18 @@ function renderDashboardCharts(balances, sales, payments) {
       totalBalanceCard.textContent = total.toFixed(2);
       totalBalanceCard.classList.add(total < 0 ? 'text-red-600' : 'text-emerald-600');
       logLayout('Total balance card updated');
-    } else {
-      log('Total balance card not found', 'error');
+    }
+    const totalSalesCard = document.getElementById('total-sales');
+    if (totalSalesCard && sales.length) {
+      const totalSales = sales.reduce((sum, s) => sum + s.Amount, 0);
+      totalSalesCard.textContent = totalSales.toFixed(2);
+      logLayout('Total sales card updated');
+    }
+    const totalPaymentsCard = document.getElementById('total-payments');
+    if (totalPaymentsCard && payments.length) {
+      const totalPayments = payments.reduce((sum, p) => sum + p['Payment Received'], 0);
+      totalPaymentsCard.textContent = totalPayments.toFixed(2);
+      logLayout('Total payments card updated');
     }
   }
 }
@@ -297,6 +416,11 @@ function populateCustomerDropdowns(customers, activeTab) {
     } else {
       log('Sale customer dropdown not found', 'error');
     }
+    const filterCustomer = document.getElementById('sales-table-filter-customer');
+    if (filterCustomer) {
+      filterCustomer.innerHTML = `<option value="">All Customers</option>${opts}`;
+      logLayout('Sales filter dropdown populated');
+    }
   }
   if (activeTab === 'payments') {
     const paymentCustomer = document.getElementById('payment-customer');
@@ -306,45 +430,82 @@ function populateCustomerDropdowns(customers, activeTab) {
     } else {
       log('Payment customer dropdown not found', 'error');
     }
+    const filterCustomer = document.getElementById('payment-table-filter-customer');
+    if (filterCustomer) {
+      filterCustomer.innerHTML = `<option value="">All Customers</option>${opts}`;
+      logLayout('Payments filter dropdown populated');
+    }
+  }
+  if (activeTab === 'transactions') {
+    const filterCustomer = document.getElementById('transaction-table-filter-customer');
+    if (filterCustomer) {
+      filterCustomer.innerHTML = `<option value="">All Customers</option>${opts}`;
+      logLayout('Transactions filter dropdown populated');
+    }
   }
 }
 
 async function deleteCustomer(id) {
   log(`Deleting customer ${id}`);
+  const table = document.getElementById('customer-table');
+  if (table) table.classList.add('opacity-50', 'pointer-events-none');
   try {
+    // Check for linked sales/payments
+    showToast('Checking for linked sales/payments...');
+    const sales = await fetch(`${API}/sales?customerId=${id}`).then(r => r.json());
+    const payments = await fetch(`${API}/payments?customerId=${id}`).then(r => r.json());
+    if (sales.length || payments.length) {
+      showToast(`Cannot delete: Found ${sales.length} sales and ${payments.length} payments. Delete them first.`);
+      log(`Cannot delete customer ${id}: ${sales.length} sales, ${payments.length} payments`, 'error');
+      return;
+    }
+    showToast('No linked transactions found. Deleting...');
     const res = await fetch(`${API}/customers/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete customer');
     log(`Customer ${id} deleted successfully`);
-    await loadData(document.querySelector('.tab-button.active')?.dataset.tab || 'dashboard');
+    showToast('Customer deleted successfully');
+    await loadData('customers');
   } catch (e) {
     log(`Error deleting customer ${id}: ${e.message}`, 'error');
-    alert(`Error: ${e.message}`);
+    showToast(`Error: ${e.message}`);
+  } finally {
+    if (table) table.classList.remove('opacity-50', 'pointer-events-none');
   }
 }
 
 async function deleteSale(id) {
   log(`Deleting sale ${id}`);
+  const table = document.getElementById('sales-table');
+  if (table) table.classList.add('opacity-50', 'pointer-events-none');
   try {
     const res = await fetch(`${API}/sales/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete sale');
     log(`Sale ${id} deleted successfully`);
-    await loadData(document.querySelector('.tab-button.active')?.dataset.tab || 'dashboard');
+    showToast('Sale deleted successfully');
+    await loadData('sales');
   } catch (e) {
     log(`Error deleting sale ${id}: ${e.message}`, 'error');
-    alert(`Error: ${e.message}`);
+    showToast(`Error: ${e.message}`);
+  } finally {
+    if (table) table.classList.remove('opacity-50', 'pointer-events-none');
   }
 }
 
 async function deletePayment(id) {
   log(`Deleting payment ${id}`);
+  const table = document.getElementById('payment-table');
+  if (table) table.classList.add('opacity-50', 'pointer-events-none');
   try {
     const res = await fetch(`${API}/payments/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete payment');
     log(`Payment ${id} deleted successfully`);
-    await loadData(document.querySelector('.tab-button.active')?.dataset.tab || 'dashboard');
+    showToast('Payment deleted successfully');
+    await loadData('payments');
   } catch (e) {
     log(`Error deleting payment ${id}: ${e.message}`, 'error');
-    alert(`Error: ${e.message}`);
+    showToast(`Error: ${e.message}`);
+  } finally {
+    if (table) table.classList.remove('opacity-50', 'pointer-events-none');
   }
 }
 
@@ -354,10 +515,11 @@ async function clearLogs() {
     const res = await fetch(`${API}/logs`, { method: 'DELETE' });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed to clear logs');
     log(`Logs cleared successfully`);
+    showToast('Logs cleared successfully');
     await loadData('logs');
   } catch (e) {
     log(`Error clearing logs: ${e.message}`, 'error');
-    alert(`Error: ${e.message}`);
+    showToast(`Error: ${e.message}`);
   }
 }
 
@@ -378,6 +540,7 @@ function toggleSidebar(show) {
   const sidebar = document.getElementById('sidebar');
   const hamburger = document.getElementById('hamburger-menu');
   if (sidebar && hamburger) {
+    sidebar.classList.add('transition-none');
     if (show) {
       sidebar.classList.remove('hidden');
       sidebar.classList.add('block');
@@ -389,6 +552,7 @@ function toggleSidebar(show) {
       hamburger.classList.remove('hidden');
       logLayout('Sidebar collapsed');
     }
+    setTimeout(() => sidebar.classList.remove('transition-none'), 0);
   } else {
     log('Sidebar or hamburger menu not found', 'error');
   }
@@ -399,13 +563,21 @@ function setupFormListeners(tab) {
   if (tab === 'customers') {
     const customerForm = document.getElementById('customer-form');
     if (customerForm) {
+      customerForm.reset();
       customerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitButton = customerForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Adding...';
+        customerForm.classList.add('opacity-50', 'pointer-events-none');
         const name = document.getElementById('customer-name')?.value.trim();
         log(`Submitting customer form: ${name}`);
         if (!name) {
           log('Customer name is empty', 'error');
-          alert('Customer Name is required');
+          showToast('Customer Name is required');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Add';
+          customerForm.classList.remove('opacity-50', 'pointer-events-none');
           return;
         }
         try {
@@ -416,11 +588,16 @@ function setupFormListeners(tab) {
           });
           if (!res.ok) throw new Error((await res.json()).error || 'Failed to add customer');
           log(`Customer ${name} added successfully`);
-          e.target.reset();
+          showToast('Customer added successfully');
+          customerForm.reset();
           await loadData('customers');
         } catch (e) {
           log(`Error adding customer: ${e.message}`, 'error');
-          alert(`Error: ${e.message}`);
+          showToast(`Error: ${e.message}`);
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Add';
+          customerForm.classList.remove('opacity-50', 'pointer-events-none');
         }
       });
       logLayout('Customer form listener added');
@@ -432,8 +609,13 @@ function setupFormListeners(tab) {
   if (tab === 'sales') {
     const salesForm = document.getElementById('sales-form');
     if (salesForm) {
+      salesForm.reset();
       salesForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitButton = salesForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+        salesForm.classList.add('opacity-50', 'pointer-events-none');
         const formData = new FormData(e.target);
         const saleData = {
           'Customer Name': formData.get('Customer Name'),
@@ -447,12 +629,40 @@ function setupFormListeners(tab) {
           Remarks: formData.get('Remarks') || ''
         };
         log(`Submitting sale: ${JSON.stringify(saleData)}`);
-        if (!saleData['Customer Name']) return alert('Please select a customer');
-        if (!saleData.Date) return alert('Please select a date');
-        if (isNaN(saleData.Quantity) || saleData.Quantity <= 0) return alert('Quantity must be a positive number');
-        if (isNaN(saleData.Rate) || saleData.Rate <= 0) return alert('Rate must be a positive number');
+        if (!saleData['Customer Name']) {
+          showToast('Please select a customer');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          salesForm.classList.remove('opacity-50', 'pointer-events-none');
+          return;
+        }
+        if (!saleData.Date) {
+          showToast('Please select a date');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          salesForm.classList.remove('opacity-50', 'pointer-events-none');
+          return;
+        }
+        if (isNaN(saleData.Quantity) || saleData.Quantity <= 0) {
+          showToast('Quantity must be a positive number');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          salesForm.classList.remove('opacity-50', 'pointer-events-none');
+          return;
+        }
+        if (isNaN(saleData.Rate) || saleData.Rate <= 0) {
+          showToast('Rate must be a positive number');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          salesForm.classList.remove('opacity-50', 'pointer-events-none');
+          return;
+        }
         if (saleData['Payment Method'] && (isNaN(saleData['Payment Received']) || saleData['Payment Received'] < 0)) {
-          return alert('Payment Received must be a non-negative number when a Payment Method is selected');
+          showToast('Payment Received must be a non-negative number when a Payment Method is selected');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          salesForm.classList.remove('opacity-50', 'pointer-events-none');
+          return;
         }
         try {
           const res = await fetch(`${API}/sales`, {
@@ -462,11 +672,16 @@ function setupFormListeners(tab) {
           });
           if (!res.ok) throw new Error((await res.json()).error || 'Failed to add sale');
           log(`Sale added successfully`);
-          e.target.reset();
+          showToast('Sale added successfully');
+          salesForm.reset();
           await loadData(tab);
         } catch (e) {
           log(`Error adding sale: ${e.message}`, 'error');
-          alert(`Error: ${e.message}`);
+          showToast(`Error: ${e.message}`);
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          salesForm.classList.remove('opacity-50', 'pointer-events-none');
         }
       });
       logLayout('Sales form listener added');
@@ -515,8 +730,13 @@ function setupFormListeners(tab) {
   if (tab === 'payments') {
     const paymentsForm = document.getElementById('payment-form');
     if (paymentsForm) {
+      paymentsForm.reset();
       paymentsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitButton = paymentsForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+        paymentsForm.classList.add('opacity-50', 'pointer-events-none');
         const formData = new FormData(e.target);
         const paymentData = {
           'Customer Name': formData.get('Customer Name'),
@@ -526,11 +746,33 @@ function setupFormListeners(tab) {
           Remarks: formData.get('Remarks') || ''
         };
         log(`Submitting payment: ${JSON.stringify(paymentData)}`);
-        if (!paymentData['Customer Name']) return alert('Please select a customer');
-        if (!paymentData.Date) return alert('Please select a date');
-        if (!paymentData['Payment Method']) return alert('Please select a payment method');
+        if (!paymentData['Customer Name']) {
+          showToast('Please select a customer');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          paymentsForm.classList.remove('opacity-50', 'pointer-events-none');
+          return;
+        }
+        if (!paymentData.Date) {
+          showToast('Please select a date');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          paymentsForm.classList.remove('opacity-50', 'pointer-events-none');
+          return;
+        }
+        if (!paymentData['Payment Method']) {
+          showToast('Please select a payment method');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          paymentsForm.classList.remove('opacity-50', 'pointer-events-none');
+          return;
+        }
         if (isNaN(paymentData['Payment Received']) || paymentData['Payment Received'] <= 0) {
-          return alert('Payment Received must be a positive number');
+          showToast('Payment Received must be a positive number');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          paymentsForm.classList.remove('opacity-50', 'pointer-events-none');
+          return;
         }
         try {
           const res = await fetch(`${API}/payments`, {
@@ -540,11 +782,16 @@ function setupFormListeners(tab) {
           });
           if (!res.ok) throw new Error((await res.json()).error || 'Failed to add payment');
           log(`Payment added successfully`);
-          e.target.reset();
+          showToast('Payment added successfully');
+          paymentsForm.reset();
           await loadData(tab);
-        } catch (e) {
+        } delančji, e) {
           log(`Error adding payment: ${e.message}`, 'error');
-          alert(`Error: ${e.message}`);
+          showToast(`Error: ${e.message}`);
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          paymentsForm.classList.remove('opacity-50', 'pointer-events-none');
         }
       });
       logLayout('Payments form listener added');
@@ -556,20 +803,37 @@ function setupFormListeners(tab) {
   if (tab === 'settings') {
     const settingsForm = document.getElementById('settings-form');
     if (settingsForm) {
+      settingsForm.reset();
       settingsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitButton = settingsForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+        settingsForm.classList.add('opacity-50', 'pointer-events-none');
         const apiUrl = document.getElementById('api-url')?.value.trim();
         log(`Submitting settings form: API URL ${apiUrl}`);
         if (!apiUrl) {
           log('API URL is empty', 'error');
-          alert('API URL is required');
+          showToast('API URL is required');
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          settingsForm.classList.remove('opacity-50', 'pointer-events-none');
           return;
         }
-        localStorage.setItem(API_BASE_KEY, apiUrl);
-        API = apiUrl;
-        log(`API URL updated to ${apiUrl}`);
-        alert('API URL updated. Reloading data...');
-        await loadData('settings');
+        try {
+          localStorage.setItem(API_BASE_KEY, apiUrl);
+          API = apiUrl;
+          log(`API URL updated to ${apiUrl}`);
+          showToast('API URL updated successfully');
+          await loadData('settings');
+        } catch (e) {
+          log(`Error updating settings: ${e.message}`, 'error');
+          showToast(`Error: ${e.message}`);
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save';
+          settingsForm.classList.remove('opacity-50', 'pointer-events-none');
+        }
       });
       logLayout('Settings form listener added');
       const apiUrlInput = document.getElementById('api-url');
@@ -639,5 +903,7 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', async () => {
   logLayout('DOM content loaded');
   await setupEventListeners();
-  await loadTabContent('dashboard');
+  const activeTab = localStorage.getItem(ACTIVE_TAB_KEY) || 'dashboard';
+  document.querySelector(`.tab-button[data-tab="${activeTab}"]`)?.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+  await loadTabContent(activeTab);
 });

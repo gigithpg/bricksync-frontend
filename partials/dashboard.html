@@ -1,23 +1,28 @@
 <div class="p-6 space-y-6">
   <h2 class="text-2xl font-bold text-slate-900">Dashboard</h2>
   <p class="text-slate-600">Overview of your BrickSync data with key metrics and trends.</p>
-
+  <div id="loading-spinner-dashboard" class="hidden flex justify-center items-center">
+    <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
+  </div>
   <!-- Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
       <h3 class="text-lg font-semibold text-slate-900">Total Customers</h3>
       <p id="total-customers" class="text-3xl font-bold text-indigo-600">0</p>
     </div>
     <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
-      <h3 class="text-lg font-semibold text-slate-900">Total Balance</h3>
-      <p id="total-balance" class="text-3xl font-bold">0.00</p>
+      <h3 class="text-lg font-semibold text-slate-900">Total Sales</h3>
+      <p id="total-sales" class="text-3xl font-bold text-indigo-600">0.00</p>
     </div>
     <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
-      <h3 class="text-lg font-semibold text-slate-900">Total Sales</h3>
-      <p id="total-sales" class="text-3xl font-bold text-indigo-600">0</p>
+      <h3 class="text-lg font-semibold text-slate-900">Total Payments</h3>
+      <p id="total-payments" class="text-3xl font-bold text-indigo-600">0.00</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200">
+      <h3 class="text-lg font-semibold text-slate-900">Pending Balance</h3>
+      <p id="total-balance" class="text-3xl font-bold">0.00</p>
     </div>
   </div>
-
   <!-- Charts -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div class="bg-white p-6 rounded-lg shadow-md">
@@ -27,6 +32,10 @@
     <div class="bg-white p-6 rounded-lg shadow-md">
       <h3 class="text-lg font-semibold text-slate-900 mb-4">Payment Methods</h3>
       <canvas id="payment-chart" class="w-full h-64"></canvas>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">Balance Trends</h3>
+      <canvas id="balance-chart" class="w-full h-64"></canvas>
     </div>
   </div>
 </div>
