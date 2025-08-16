@@ -1,9 +1,16 @@
 <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
   <h2 class="text-xl font-bold text-slate-900">Settings</h2>
   <form id="settings-form" class="space-y-4">
-    <div>
-      <label for="api-url" class="block text-sm font-medium text-slate-700">API URL</label>
-      <input type="text" id="api-url" name="api-url" class="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2" placeholder="Enter API URL (e.g., http://192.168.1.125:3000)" required>
+    <div class="space-y-2">
+      <label class="block text-sm font-medium text-slate-700">Device Type</label>
+      <label class="flex items-center">
+        <input type="radio" name="device-type" value="desktop" class="mr-2 text-indigo-600 focus:ring-indigo-500" required>
+        <span class="text-sm text-slate-700">Desktop (Home Wi-Fi, 192.168.1.125:3000)</span>
+      </label>
+      <label class="flex items-center">
+        <input type="radio" name="device-type" value="mobile" class="mr-2 text-indigo-600 focus:ring-indigo-500" required>
+        <span class="text-sm text-slate-700">Mobile (Mobile Data, localhost:3000)</span>
+      </label>
     </div>
     <div>
       <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200 w-full md:w-auto">Save</button>

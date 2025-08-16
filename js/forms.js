@@ -1,5 +1,7 @@
-import { log, API, loadData } from './api.js';
+import { log, API_BASE_KEY, loadData } from './api.js';
 import { logLayout, showToast, showLoadingSpinner, hideLoadingSpinner } from './ui.js';
+
+let API = localStorage.getItem(API_BASE_KEY) || 'http://192.168.1.125:3000'; // Initialize API locally
 
 export function updateSaleAmount() {
   const qty = parseFloat(document.getElementById('sale-quantity')?.value) || 0;
@@ -266,7 +268,7 @@ export function setupFormListeners(tab, renderFunctions) {
         submitButton.disabled = true;
         submitButton.textContent = 'Saving...';
         settingsForm.classList.add('opacity-50', 'pointer-events-none');
-        const deviceType = document.getElementById('device-type')?.value;
+        const deviceType = document.querySelector('input[name="device-type"]:checked')?.value;
         log(`Submitting settings form: Device Type ${deviceType}`);
         if (!deviceType) {
           log('Device type is empty', 'error');
@@ -296,12 +298,15 @@ export function setupFormListeners(tab, renderFunctions) {
         }
       });
       logLayout('Settings form listener added');
-      const deviceTypeSelect = document.getElementById('device-type');
-      if (deviceTypeSelect) {
-        deviceTypeSelect.value = localStorage.getItem('device-type') || (API === 'http://localhost:3000' ? 'mobile' : 'desktop');
-        logLayout(`Device type initialized: ${deviceTypeSelect.value}`);
+      const deviceTypeInputs = document.querySelectorAll('input[name="device-type"]');
+      if (deviceTypeInputs.length) {
+        const savedDeviceType = localStorage.getItem('device-type');
+        if (savedDeviceType) {
+          document.querySelector(`input[name="device-type"][value="${savedDeviceType}"]`).checked = true;
+        }
+        logLayout(`Device type initialized: ${savedDeviceType || 'none'}`);
       } else {
-        log('Device type select not found', 'error');
+        log('Device type inputs not found', 'error');
       }
     } else {
       log('Settings form not found', 'error');
@@ -318,7 +323,7 @@ export function setupDeviceModalListener(renderFunctions) {
       submitButton.disabled = true;
       submitButton.textContent = 'Saving...';
       deviceForm.classList.add('opacity-50', 'pointer-events-none');
-      const deviceType = document.getElementById('device-type')?.value;
+      const deviceType = document.querySelector('input[name="device-type"]:checked')?.value;
       log(`Submitting device selection: ${deviceType}`);
       if (!deviceType) {
         log('Device type is empty', 'error');
@@ -349,6 +354,11 @@ export function setupDeviceModalListener(renderFunctions) {
       }
     });
     logLayout('Device modal form listener added');
+    const savedDeviceType = localStorage.getItem('device-type');
+    if (savedDeviceType) {
+      const radio = document.querySelector(`input[name="device-type"][value="${savedDeviceType}"]`);
+      if (radio) radio.checked = true;
+    }
   } else {
     log('Device modal form not found', 'error');
   }
