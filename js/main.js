@@ -1,19 +1,44 @@
 const API_BASE_KEY = 'apiBaseUrl';
 const ACTIVE_TAB_KEY = 'activeTab';
-let API = localStorage.getItem(API_BASE_KEY) || 'http://192.168.1.125:3000';
+const DEFAULT_API = 'http://192.168.1.125:3000';
+let API = localStorage.getItem(API_BASE_KEY) || DEFAULT_API;
 
 async function checkApiUrl() {
-  const isMobile = /Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  log(`Checking API URL. Is mobile: ${isMobile}, Current API: ${API}`);
+  
+  // Try default API (192.168.1.125:3000) first
+  try {
+    const response = await fetch(`${DEFAULT_API}/health`, { method: 'HEAD', signal: AbortSignal.timeout(2000) });
+    if (response.ok) {
+      if (API !== DEFAULT_API) {
+        API = DEFAULT_API;
+        localStorage.setItem(API_BASE_KEY, API);
+        log(`API switched to ${API}`);
+        showToast(`Using API: ${API}`);
+      }
+      return;
+    }
+  } catch (e) {
+    log(`Default API (${DEFAULT_API}) unreachable: ${e.message}`, 'warn');
+  }
+
+  // If on mobile and default API is unreachable, try localhost
   if (isMobile) {
     try {
-      const response = await fetch(`${API}/health`, { method: 'HEAD', timeout: 2000 });
-      if (!response.ok) throw new Error('Server unreachable');
-      log('API reachable: ' + API);
+      const response = await fetch('http://localhost:3000/health', { method: 'HEAD', signal: AbortSignal.timeout(2000) });
+      if (response.ok) {
+        if (API !== 'http://localhost:3000') {
+          API = 'http://localhost:3000';
+          localStorage.setItem(API_BASE_KEY, API);
+          log(`API switched to localhost:3000`);
+          showToast('Switched to localhost:3000');
+        }
+        return;
+      }
     } catch (e) {
-      log('API unreachable, switching to localhost:3000', 'warn');
-      API = 'http://localhost:3000';
-      localStorage.setItem(API_BASE_KEY, API);
-      showToast('Switched to localhost:3000');
+      log(`Localhost API unreachable: ${e.message}`, 'error');
+      showToast('No API reachable. Check server or Settings.');
     }
   }
 }
@@ -980,6 +1005,10 @@ function setupEventListeners() {
         });
         button.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
         logLayout(`Added active classes to button: ${button.dataset.tab}`);
+        if (window.innerWidth < 768) {
+          toggleSidebar(false);
+          logLayout('Sidebar closed on mobile tab click');
+        }
         await loadTabContent(button.dataset.tab);
       });
     });
