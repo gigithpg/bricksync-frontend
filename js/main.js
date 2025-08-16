@@ -2,6 +2,22 @@ const API_BASE_KEY = 'apiBaseUrl';
 const ACTIVE_TAB_KEY = 'activeTab';
 let API = localStorage.getItem(API_BASE_KEY) || 'http://192.168.1.125:3000';
 
+async function checkApiUrl() {
+  const isMobile = /Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
+  if (isMobile) {
+    try {
+      const response = await fetch(`${API}/health`, { method: 'HEAD', timeout: 2000 });
+      if (!response.ok) throw new Error('Server unreachable');
+      log('API reachable: ' + API);
+    } catch (e) {
+      log('API unreachable, switching to localhost:3000', 'warn');
+      API = 'http://localhost:3000';
+      localStorage.setItem(API_BASE_KEY, API);
+      showToast('Switched to localhost:3000');
+    }
+  }
+}
+
 function log(message, level = 'log') {
   console[level](`[BrickSync ${new Date().toISOString()}] ${message}`);
 }
@@ -49,8 +65,12 @@ async function loadTabContent(tab) {
     let flatpickrInstances = [];
     if (tab === 'sales' || tab === 'payments') {
       try {
-        flatpickrInstances.push(flatpickr('#sale-date', { dateFormat: 'd/m/Y', closeOnSelect: true }));
-        flatpickrInstances.push(flatpickr('#payment-date', { dateFormat: 'd/m/Y', closeOnSelect: true }));
+        if (document.getElementById('sale-date')) {
+          flatpickrInstances.push(flatpickr('#sale-date', { dateFormat: 'd/m/Y', closeOnSelect: true }));
+        }
+        if (document.getElementById('payment-date')) {
+          flatpickrInstances.push(flatpickr('#payment-date', { dateFormat: 'd/m/Y', closeOnSelect: true }));
+        }
         logLayout('Flatpickr initialized for ' + tab);
       } catch (e) {
         log(`Error initializing Flatpickr for ${tab}: ${e.message}`, 'error');
@@ -58,7 +78,9 @@ async function loadTabContent(tab) {
     }
     if (tab === 'dashboard') {
       try {
-        flatpickrInstances.push(flatpickr('#sales-date-filter', { dateFormat: 'd/m/Y', closeOnSelect: true }));
+        if (document.getElementById('sales-date-filter')) {
+          flatpickrInstances.push(flatpickr('#sales-date-filter', { dateFormat: 'd/m/Y', closeOnSelect: true }));
+        }
         logLayout('Flatpickr initialized for dashboard sales date filter');
       } catch (e) {
         log('Error initializing Flatpickr for dashboard: ' + e.message, 'error');
@@ -67,7 +89,7 @@ async function loadTabContent(tab) {
     // Close Flatpickr on outside click
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.flatpickr-calendar')) {
-        flatpickrInstances.forEach(instance => instance.close());
+        flatpickrInstances.filter(instance => instance && typeof instance.close === 'function').forEach(instance => instance.close());
       }
     }, { once: true });
     
@@ -97,6 +119,7 @@ async function loadTabContent(tab) {
 async function loadData(activeTab) {
   log(`Starting data load for tab: ${activeTab}`);
   try {
+    await checkApiUrl();
     showLoadingSpinner(activeTab);
     // Fetch customers
     log('Fetching customers');
@@ -232,6 +255,25 @@ function renderTable(tableId, data, activeTab, sortBy = null, sortOrder = 'asc')
       renderTable(tableId, data, activeTab, 'Date', newSortOrder);
     });
   });
+  // Add delete listeners
+  if (tableId.includes('customer')) {
+    document.querySelectorAll('.delete-customer').forEach(btn => {
+      btn.addEventListener('click', () => deleteCustomer(btn.dataset.id));
+    });
+    logLayout('Customer delete listeners added');
+  }
+  if (tableId.includes('sale')) {
+    document.querySelectorAll('.delete-sale').forEach(btn => {
+      btn.addEventListener('click', () => deleteSale(btn.dataset.id));
+    });
+    logLayout('Sale delete listeners added');
+  }
+  if (tableId.includes('payment')) {
+    document.querySelectorAll('.delete-payment').forEach(btn => {
+      btn.addEventListener('click', () => deletePayment(btn.dataset.id));
+    });
+    logLayout('Payment delete listeners added');
+  }
   // Add filter listeners
   if (tableId.includes('sale') || tableId.includes('payment')) {
     const filter = document.getElementById(`${tableId}-filter-customer`);
@@ -967,6 +1009,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   logLayout('DOM content loaded');
   await setupEventListeners();
   const activeTab = localStorage.getItem(ACTIVE_TAB_KEY) || 'dashboard';
-  document.querySelector(`.tab-button[data-tab="${activeTab}"]`)?.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.remove('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+  });
+  const activeButton = document.querySelector(`.tab-button[data-tab="${activeTab}"]`);
+  if (activeButton) {
+    activeButton.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+  }
   await loadTabContent(activeTab);
 });
