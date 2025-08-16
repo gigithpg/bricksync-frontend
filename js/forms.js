@@ -47,7 +47,6 @@ export function setupFormListeners(tab, renderFunctions) {
           showToast('Customer added successfully');
           customerForm.reset();
           await loadData('customers', renderFunctions);
-          showToast('Customer added successfully');
         } catch (e) {
           log(`Error adding customer: ${e.message}`, 'error');
           showToast(`Error: ${e.message}`);
@@ -257,9 +256,8 @@ export function setupFormListeners(tab, renderFunctions) {
     }
   }
 
-  if (tab === 'settings' || tab === 'landing') {
-    const formId = tab === 'settings' ? 'settings-form' : 'landing-form';
-    const settingsForm = document.getElementById(formId);
+  if (tab === 'settings') {
+    const settingsForm = document.getElementById('settings-form');
     if (settingsForm) {
       settingsForm.reset();
       settingsForm.addEventListener('submit', async (e) => {
@@ -269,7 +267,7 @@ export function setupFormListeners(tab, renderFunctions) {
         submitButton.textContent = 'Saving...';
         settingsForm.classList.add('opacity-50', 'pointer-events-none');
         const deviceType = document.getElementById('device-type')?.value;
-        log(`Submitting ${tab} form: Device Type ${deviceType}`);
+        log(`Submitting settings form: Device Type ${deviceType}`);
         if (!deviceType) {
           log('Device type is empty', 'error');
           showToast('Please select a device type');
@@ -281,35 +279,77 @@ export function setupFormListeners(tab, renderFunctions) {
         const apiUrl = deviceType === 'mobile' ? 'http://localhost:3000' : 'http://192.168.1.125:3000';
         try {
           localStorage.setItem(API_BASE_KEY, apiUrl);
+          localStorage.setItem('device-type', deviceType);
           API = apiUrl;
           localStorage.setItem('apiValid', apiUrl);
           log(`API URL updated to ${apiUrl}`);
-          showToast('API URL updated successfully');
-          if (tab === 'landing') {
-            await loadData('dashboard', renderFunctions);
-            document.querySelector('.tab-button[data-tab="dashboard"]').click();
-          } else {
-            await loadData('settings', renderFunctions);
-          }
+          showToast('Settings saved successfully');
+          await loadData('dashboard', renderFunctions);
+          document.querySelector('.tab-button[data-tab="dashboard"]').click();
         } catch (e) {
           log(`Error updating settings: ${e.message}`, 'error');
           showToast(`Error: ${e.message}`);
         } finally {
           submitButton.disabled = false;
-          submitButton.textContent = tab === 'landing' ? 'Continue' : 'Save';
+          submitButton.textContent = 'Save';
           settingsForm.classList.remove('opacity-50', 'pointer-events-none');
         }
       });
-      logLayout(`${tab} form listener added`);
+      logLayout('Settings form listener added');
       const deviceTypeSelect = document.getElementById('device-type');
       if (deviceTypeSelect) {
-        deviceTypeSelect.value = API === 'http://localhost:3000' ? 'mobile' : 'desktop';
+        deviceTypeSelect.value = localStorage.getItem('device-type') || (API === 'http://localhost:3000' ? 'mobile' : 'desktop');
         logLayout(`Device type initialized: ${deviceTypeSelect.value}`);
       } else {
         log('Device type select not found', 'error');
       }
     } else {
-      log(`${tab} form not found`, 'error');
+      log('Settings form not found', 'error');
     }
+  }
+}
+
+export function setupDeviceModalListener(renderFunctions) {
+  const deviceForm = document.getElementById('device-form');
+  if (deviceForm) {
+    deviceForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitButton = deviceForm.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+      submitButton.textContent = 'Saving...';
+      deviceForm.classList.add('opacity-50', 'pointer-events-none');
+      const deviceType = document.getElementById('device-type')?.value;
+      log(`Submitting device selection: ${deviceType}`);
+      if (!deviceType) {
+        log('Device type is empty', 'error');
+        showToast('Please select a device type');
+        submitButton.disabled = false;
+        submitButton.textContent = 'Continue';
+        deviceForm.classList.remove('opacity-50', 'pointer-events-none');
+        return;
+      }
+      const apiUrl = deviceType === 'mobile' ? 'http://localhost:3000' : 'http://192.168.1.125:3000';
+      try {
+        localStorage.setItem(API_BASE_KEY, apiUrl);
+        localStorage.setItem('device-type', deviceType);
+        API = apiUrl;
+        localStorage.setItem('apiValid', apiUrl);
+        log(`API URL set to ${apiUrl}`);
+        showToast('Device type saved successfully');
+        document.getElementById('device-modal').classList.add('hidden');
+        await loadData('dashboard', renderFunctions);
+        document.querySelector('.tab-button[data-tab="dashboard"]').click();
+      } catch (e) {
+        log(`Error setting device type: ${e.message}`, 'error');
+        showToast(`Error: ${e.message}. Please try again in Settings.`);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Continue';
+        deviceForm.classList.remove('opacity-50', 'pointer-events-none');
+      }
+    });
+    logLayout('Device modal form listener added');
+  } else {
+    log('Device modal form not found', 'error');
   }
 }

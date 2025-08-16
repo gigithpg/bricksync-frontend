@@ -38,6 +38,7 @@
     --color-gray-600: oklch(44.6% 0.03 256.802);
     --color-gray-700: oklch(37.3% 0.034 259.733);
     --color-gray-900: oklch(21% 0.034 264.665);
+    --color-black: #000;
     --color-white: #fff;
     --spacing: 0.25rem;
     --container-md: 28rem;
@@ -257,6 +258,9 @@
   }
   .z-20 {
     z-index: 20;
+  }
+  .z-50 {
+    z-index: 50;
   }
   .container {
     width: 100%;
@@ -491,6 +495,9 @@
   }
   .border-slate-300 {
     border-color: var(--color-slate-300);
+  }
+  .bg-black {
+    background-color: var(--color-black);
   }
   .bg-blue-500 {
     background-color: var(--color-blue-500);

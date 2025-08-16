@@ -13,58 +13,91 @@ export async function checkApiUrl() {
   // Skip check if API is cached and valid
   if (localStorage.getItem('apiValid') === API) {
     log(`Using cached API: ${API}`);
-    return;
+    return true;
   }
 
-  // Try default API first
+  // Try current API first
   try {
-    const response = await fetch(`${DEFAULT_API}/customers`, { method: 'GET', signal: AbortSignal.timeout(2000) });
+    const response = await fetch(`${API}/customers`, { method: 'GET', signal: AbortSignal.timeout(5000) });
     if (response.ok) {
-      if (API !== DEFAULT_API) {
+      localStorage.setItem('apiValid', API);
+      log(`API ${API} is valid`);
+      return true;
+    } else {
+      log(`API ${API} returned HTTP ${response.status}: ${response.statusText}`, 'warn');
+    }
+  } catch (e) {
+    log(`API ${API} unreachable: ${e.message}`, 'warn');
+  }
+
+  // Try default API
+  if (API !== DEFAULT_API) {
+    try {
+      const response = await fetch(`${DEFAULT_API}/customers`, { method: 'GET', signal: AbortSignal.timeout(5000) });
+      if (response.ok) {
         API = DEFAULT_API;
         localStorage.setItem(API_BASE_KEY, API);
         localStorage.setItem('apiValid', API);
         log(`API switched to ${API}`);
+        return true;
+      } else {
+        log(`Default API (${DEFAULT_API}) returned HTTP ${response.status}: ${response.statusText}`, 'warn');
       }
-      return;
+    } catch (e) {
+      log(`Default API (${DEFAULT_API}) unreachable: ${e.message}`, 'warn');
     }
-  } catch (e) {
-    log(`Default API (${DEFAULT_API}) unreachable: ${e.message}`, 'warn');
   }
 
   // If on mobile, try localhost
   if (isMobile) {
     try {
-      const response = await fetch('http://localhost:3000/customers', { method: 'GET', signal: AbortSignal.timeout(2000) });
+      const response = await fetch('http://localhost:3000/customers', { method: 'GET', signal: AbortSignal.timeout(5000) });
       if (response.ok) {
-        if (API !== 'http://localhost:3000') {
-          API = 'http://localhost:3000';
-          localStorage.setItem(API_BASE_KEY, API);
-          localStorage.setItem('apiValid', API);
-          log(`API switched to localhost:3000`);
-        }
-        return;
+        API = 'http://localhost:3000';
+        localStorage.setItem(API_BASE_KEY, API);
+        localStorage.setItem('apiValid', API);
+        log(`API switched to localhost:3000`);
+        return true;
+      } else {
+        log(`Localhost API returned HTTP ${response.status}: ${response.statusText}`, 'warn');
       }
     } catch (e) {
-      log(`Localhost API unreachable: ${e.message}`, 'error');
+      log(`Localhost API unreachable: ${e.message}`, 'warn');
     }
   }
-  log('No API reachable', 'error');
+
+  log('No API reachable. Please check Settings.', 'error');
+  return false;
 }
 
 export async function loadData(activeTab, renderFunctions) {
   log(`Starting data load for tab: ${activeTab}`);
   try {
-    await checkApiUrl();
-    if (!localStorage.getItem('apiValid')) {
-      throw new Error('No valid API available');
+    const apiAvailable = await checkApiUrl();
+    if (!apiAvailable) {
+      // Fallback to cached data if available
+      const cachedData = {
+        customers: JSON.parse(localStorage.getItem('customer-table-data') || '[]'),
+        sales: JSON.parse(localStorage.getItem('sales-table-data') || '[]'),
+        payments: JSON.parse(localStorage.getItem('payment-table-data') || '[]'),
+        transactions: JSON.parse(localStorage.getItem('transaction-table-data') || '[]'),
+        balances: JSON.parse(localStorage.getItem('balance-table-data') || '[]'),
+        logs: JSON.parse(localStorage.getItem('log-table-data') || '[]')
+      };
+      if (cachedData[activeTab].length) {
+        log(`Using cached data for ${activeTab}`);
+        renderTabWithCachedData(activeTab, cachedData, renderFunctions);
+        return;
+      }
+      throw new Error('No valid API available. Please check Settings.');
     }
+
     const { renderCustomers, renderSales, renderPayments, renderDashboard, renderDashboardCharts, populateCustomerDropdowns } = renderFunctions;
 
     // Fetch customers
     log('Fetching customers');
-    const customers = await fetch(`${API}/customers`).then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+    const customers = await fetch(`${API}/customers`).then(async r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
       return r.json();
     });
     log(`Loaded ${customers.length} customers`);
@@ -83,8 +116,8 @@ export async function loadData(activeTab, renderFunctions) {
     let sales = [];
     if (activeTab === 'sales' || activeTab === 'dashboard' || activeTab === 'transactions') {
       log('Fetching sales');
-      sales = await fetch(`${API}/sales`).then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+      sales = await fetch(`${API}/sales`).then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
         return r.json();
       });
       log(`Loaded ${sales.length} sales`);
@@ -98,8 +131,8 @@ export async function loadData(activeTab, renderFunctions) {
     let payments = [];
     if (activeTab === 'payments' || activeTab === 'dashboard' || activeTab === 'transactions') {
       log('Fetching payments');
-      payments = await fetch(`${API}/payments`).then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+      payments = await fetch(`${API}/payments`).then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
         return r.json();
       });
       log(`Loaded ${payments.length} payments`);
@@ -112,8 +145,8 @@ export async function loadData(activeTab, renderFunctions) {
     // Fetch and render transactions
     if (activeTab === 'transactions') {
       log('Fetching transactions');
-      const transactions = await fetch(`${API}/transactions`).then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+      const transactions = await fetch(`${API}/transactions`).then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
         return r.json();
       });
       log(`Loaded ${transactions.length} transactions`);
@@ -124,8 +157,8 @@ export async function loadData(activeTab, renderFunctions) {
     // Fetch and render balances
     if (activeTab === 'balances' || activeTab === 'dashboard') {
       log('Fetching balances');
-      const balances = await fetch(`${API}/balances`).then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+      const balances = await fetch(`${API}/balances`).then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
         return r.json();
       });
       log(`Loaded ${balances.length} balances`);
@@ -140,16 +173,40 @@ export async function loadData(activeTab, renderFunctions) {
     // Fetch and render logs
     if (activeTab === 'logs') {
       log('Fetching logs');
-      const logs = await fetch(`${API}/logs`).then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+      const logs = await fetch(`${API}/logs`).then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
         return r.json();
       });
       log(`Loaded ${logs.length} logs`);
+      localStorage.setItem('log-table-data', JSON.stringify(logs));
       renderFunctions.renderLogs(logs);
     }
   } catch (e) {
     log(`Error loading data: ${e.message}`, 'error');
-    throw e; // Let caller handle error display
+    throw e;
+  }
+}
+
+function renderTabWithCachedData(activeTab, cachedData, renderFunctions) {
+  const { renderCustomers, renderSales, renderPayments, renderDashboard, renderDashboardCharts, renderTable, renderLogs, populateCustomerDropdowns } = renderFunctions;
+  if (activeTab === 'customers') {
+    renderCustomers(cachedData.customers, activeTab);
+  } else if (activeTab === 'sales') {
+    renderSales(cachedData.sales, activeTab);
+    populateCustomerDropdowns(cachedData.customers, activeTab);
+  } else if (activeTab === 'payments') {
+    renderPayments(cachedData.payments, activeTab);
+    populateCustomerDropdowns(cachedData.customers, activeTab);
+  } else if (activeTab === 'transactions') {
+    renderTable('transaction-table', cachedData.transactions, activeTab);
+    populateCustomerDropdowns(cachedData.customers, activeTab);
+  } else if (activeTab === 'balances') {
+    renderTable('balance-table', cachedData.balances, activeTab);
+  } else if (activeTab === 'dashboard') {
+    renderDashboard(cachedData.customers);
+    renderDashboardCharts(cachedData.balances, cachedData.sales, cachedData.payments);
+  } else if (activeTab === 'logs') {
+    renderLogs(cachedData.logs);
   }
 }
 
@@ -158,13 +215,19 @@ export async function deleteCustomer(name, loadData) {
   const table = document.getElementById('customer-table');
   if (table) table.classList.add('opacity-50', 'pointer-events-none');
   try {
-    const sales = await fetch(`${API}/sales?customerName=${encodeURIComponent(name)}`).then(r => r.json());
-    const payments = await fetch(`${API}/payments?customerName=${encodeURIComponent(name)}`).then(r => r.json());
+    const sales = await fetch(`${API}/sales?customerName=${encodeURIComponent(name)}`).then(async r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
+      return r.json();
+    });
+    const payments = await fetch(`${API}/payments?customerName=${encodeURIComponent(name)}`).then(async r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
+      return r.json();
+    });
     if (sales.length || payments.length) {
       throw new Error(`Cannot delete: Found ${sales.length} sales and ${payments.length} payments. Delete them first.`);
     }
     const res = await fetch(`${API}/customers/${encodeURIComponent(name)}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete customer');
+    if (!r.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     log(`Customer ${name} deleted successfully`);
     await loadData('customers');
   } catch (e) {
@@ -181,7 +244,7 @@ export async function deleteSale(id, loadData) {
   if (table) table.classList.add('opacity-50', 'pointer-events-none');
   try {
     const res = await fetch(`${API}/sales/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete sale');
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     log(`Sale ${id} deleted successfully`);
     await loadData('sales');
   } catch (e) {
@@ -198,7 +261,7 @@ export async function deletePayment(id, loadData) {
   if (table) table.classList.add('opacity-50', 'pointer-events-none');
   try {
     const res = await fetch(`${API}/payments/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete payment');
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     log(`Payment ${id} deleted successfully`);
     await loadData('payments');
   } catch (e) {
@@ -213,7 +276,7 @@ export async function clearLogs(loadData) {
   log(`Clearing logs`);
   try {
     const res = await fetch(`${API}/logs`, { method: 'DELETE' });
-    if (!res.ok) throw new Error((await res.json()).error || 'Failed to clear logs');
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     log(`Logs cleared successfully`);
     await loadData('logs');
   } catch (e) {

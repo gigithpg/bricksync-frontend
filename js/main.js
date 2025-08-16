@@ -1,6 +1,6 @@
 import { log, loadData, checkApiUrl, deleteCustomer, deleteSale, deletePayment, clearLogs } from './api.js';
 import { logLayout, showToast, showLoadingSpinner, hideLoadingSpinner, renderTable, renderCustomers, renderSales, renderPayments, renderLogs, renderDashboard, renderDashboardCharts, populateCustomerDropdowns, toggleSidebar } from './ui.js';
-import { setupFormListeners, updateSaleAmount } from './forms.js';
+import { setupFormListeners, setupDeviceModalListener, updateSaleAmount } from './forms.js';
 
 const renderFunctions = { renderTable, renderCustomers, renderSales, renderPayments, renderLogs, renderDashboard, renderDashboardCharts, populateCustomerDropdowns };
 
@@ -68,8 +68,8 @@ async function loadTabContent(tab) {
     }
   } catch (e) {
     log(`Error loading tab content ${tab}: ${e.message}`, 'error');
-    tabContent.innerHTML = `<p class="text-red-600 p-4">Error loading ${tab} content: ${e.message}</p>`;
-    showToast(`Error loading ${tab}: ${e.message}`);
+    tabContent.innerHTML = `<p class="text-red-600 p-4">Error loading ${tab} content: ${e.message}. Please check Settings.</p>`;
+    showToast(`Error loading ${tab}: ${e.message}. Please check Settings.`);
   }
 }
 
@@ -164,13 +164,19 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', async () => {
   logLayout('DOM content loaded');
   await setupEventListeners();
-  const activeTab = localStorage.getItem('activeTab') || 'landing';
-  document.querySelectorAll('.tab-button').forEach(btn => {
-    btn.classList.remove('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
-  });
-  const activeButton = document.querySelector(`.tab-button[data-tab="${activeTab}"]`);
-  if (activeButton) {
-    activeButton.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+  const deviceType = localStorage.getItem('device-type');
+  if (!deviceType) {
+    document.getElementById('device-modal').classList.remove('hidden');
+    setupDeviceModalListener(renderFunctions);
+  } else {
+    const activeTab = localStorage.getItem('activeTab') || 'dashboard';
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.classList.remove('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+    });
+    const activeButton = document.querySelector(`.tab-button[data-tab="${activeTab}"]`);
+    if (activeButton) {
+      activeButton.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+    }
+    await loadTabContent(activeTab);
   }
-  await loadTabContent(activeTab);
 });

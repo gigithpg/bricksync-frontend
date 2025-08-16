@@ -207,7 +207,7 @@ export function renderDashboardCharts(balances, sales, payments) {
         labels: Object.keys(paymentsByCustomer),
         datasets: [{
           data: Object.values(paymentsByCustomer),
-          backgroundColor: ['rgba(99, 102, 241, 0.6)', 'rgba(16, 185, 129, 0.6)', 'rgba(239, 68, 68, 0.6)', 'rgba(249, 115, 22, 0.6)', 'rgba(107, 114, 128, 0.6)']
+          backgroundColor: ['rgba(99, 102, 241, 0.6)', 'rgba(16, 185, 129, 0.6)', 'rgba(239, 68, 68, 0.6)', '249, 115, 22, 0.6)', 'rgba(107, 114, 128, 0.6)']
         }]
       }
     });
