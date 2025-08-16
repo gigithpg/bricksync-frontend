@@ -56,6 +56,14 @@ async function loadTabContent(tab) {
         log(`Error initializing Flatpickr for ${tab}: ${e.message}`, 'error');
       }
     }
+    if (tab === 'dashboard') {
+      try {
+        flatpickrInstances.push(flatpickr('#sales-date-filter', { dateFormat: 'd/m/Y', closeOnSelect: true }));
+        logLayout('Flatpickr initialized for dashboard sales date filter');
+      } catch (e) {
+        log('Error initializing Flatpickr for dashboard: ' + e.message, 'error');
+      }
+    }
     // Close Flatpickr on outside click
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.flatpickr-calendar')) {
@@ -173,7 +181,7 @@ async function loadData(activeTab) {
     }
   } catch (e) {
     log(`Error loading data: ${e.message}`, 'error');
-    alert(`Error loading data: ${e.message}. Check API URL in Settings.`);
+    showToast(`Error loading data: ${e.message}. Check API URL in Settings.`);
   } finally {
     hideLoadingSpinner(activeTab);
   }
@@ -310,53 +318,108 @@ function renderDashboard(customers) {
 function renderDashboardCharts(balances, sales, payments) {
   logLayout('Rendering dashboard charts');
   const salesChartCanvas = document.getElementById('sales-chart');
-  const paymentChartCanvas = document.getElementById('payment-chart');
+  const salesPerCustomerCanvas = document.getElementById('sales-per-customer-chart');
+  const paymentPerCustomerCanvas = document.getElementById('payment-per-customer-chart');
   const balanceChartCanvas = document.getElementById('balance-chart');
 
+  // Sales Over Time (Bar Chart)
   if (salesChartCanvas && sales.length) {
-    const salesByDate = sales.reduce((acc, sale) => {
-      acc[sale.Date] = (acc[sale.Date] || 0) + sale.Amount;
-      return acc;
-    }, {});
-    new Chart(salesChartCanvas, {
-      type: 'bar',
-      data: {
-        labels: Object.keys(salesByDate),
-        datasets: [{
-          label: 'Sales Amount',
-          data: Object.values(salesByDate),
-          backgroundColor: 'rgba(99, 102, 241, 0.6)',
-          borderColor: 'rgba(99, 102, 241, 1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        scales: {
-          y: { beginAtZero: true }
-        }
+    let filteredSales = [...sales];
+    const dateFilter = document.getElementById('sales-date-filter');
+    const monthFilter = document.getElementById('sales-month-filter');
+    const yearFilter = document.getElementById('sales-year-filter');
+    
+    const applySalesFilters = () => {
+      filteredSales = [...sales];
+      if (dateFilter.value) {
+        filteredSales = filteredSales.filter(s => s.Date === dateFilter.value);
+      } else if (monthFilter.value && yearFilter.value) {
+        const [filterYear, filterMonth] = monthFilter.value.split('-');
+        filteredSales = filteredSales.filter(s => {
+          const [day, month, year] = s.Date.split('/');
+          return year === filterYear && month === filterMonth.padStart(2, '0');
+        });
+      } else if (yearFilter.value) {
+        filteredSales = filteredSales.filter(s => s.Date.endsWith(yearFilter.value));
       }
+      const salesByDate = filteredSales.reduce((acc, sale) => {
+        acc[sale.Date] = (acc[sale.Date] || 0) + sale.Amount;
+        return acc;
+      }, {});
+      const chart = Chart.getChart(salesChartCanvas);
+      if (chart) chart.destroy();
+      new Chart(salesChartCanvas, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(salesByDate),
+          datasets: [{
+            label: 'Sales Amount',
+            data: Object.values(salesByDate),
+            backgroundColor: 'rgba(99, 102, 241, 0.6)',
+            borderColor: 'rgba(99, 102, 241, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+      logLayout('Sales chart rendered');
+    };
+
+    dateFilter.addEventListener('change', applySalesFilters);
+    monthFilter.addEventListener('change', () => {
+      if (monthFilter.value) dateFilter.value = '';
+      applySalesFilters();
     });
-    logLayout('Sales chart rendered');
+    yearFilter.addEventListener('change', () => {
+      if (yearFilter.value) dateFilter.value = '';
+      applySalesFilters();
+    });
+    applySalesFilters();
   }
 
-  if (paymentChartCanvas && payments.length) {
-    const paymentMethods = payments.reduce((acc, payment) => {
-      acc[payment['Payment Method']] = (acc[payment['Payment Method']] || 0) + 1;
+  // Sales Per Customer (Pie Chart)
+  if (salesPerCustomerCanvas && sales.length) {
+    const salesByCustomer = sales.reduce((acc, sale) => {
+      acc[sale['Customer Name']] = (acc[sale['Customer Name']] || 0) + sale.Amount;
       return acc;
     }, {});
-    new Chart(paymentChartCanvas, {
+    new Chart(salesPerCustomerCanvas, {
       type: 'pie',
       data: {
-        labels: Object.keys(paymentMethods),
+        labels: Object.keys(salesByCustomer),
         datasets: [{
-          data: Object.values(paymentMethods),
+          data: Object.values(salesByCustomer),
           backgroundColor: ['rgba(99, 102, 241, 0.6)', 'rgba(16, 185, 129, 0.6)', 'rgba(239, 68, 68, 0.6)', 'rgba(249, 115, 22, 0.6)', 'rgba(107, 114, 128, 0.6)']
         }]
       }
     });
-    logLayout('Payment chart rendered');
+    logLayout('Sales per customer chart rendered');
   }
 
+  // Payments Per Customer (Pie Chart)
+  if (paymentPerCustomerCanvas && payments.length) {
+    const paymentsByCustomer = payments.reduce((acc, payment) => {
+      acc[payment['Customer Name']] = (acc[payment['Customer Name']] || 0) + payment['Payment Received'];
+      return acc;
+    }, {});
+    new Chart(paymentPerCustomerCanvas, {
+      type: 'pie',
+      data: {
+        labels: Object.keys(paymentsByCustomer),
+        datasets: [{
+          data: Object.values(paymentsByCustomer),
+          backgroundColor: ['rgba(99, 102, 241, 0.6)', 'rgba(16, 185, 129, 0.6)', 'rgba(239, 68, 68, 0.6)', 'rgba(249, 115, 22, 0.6)', 'rgba(107, 114, 128, 0.6)']
+        }]
+      }
+    });
+    logLayout('Payments per customer chart rendered');
+  }
+
+  // Balance Trends (Line Chart)
   if (balanceChartCanvas && balances.length) {
     const balanceByCustomer = balances.reduce((acc, b) => {
       acc[b['Customer Name']] = b['Pending Balance'];
@@ -382,6 +445,7 @@ function renderDashboardCharts(balances, sales, payments) {
     logLayout('Balance chart rendered');
   }
 
+  // Update Cards
   if (balances && balances.length) {
     const totalBalanceCard = document.getElementById('total-balance');
     if (totalBalanceCard) {
@@ -450,7 +514,6 @@ async function deleteCustomer(id) {
   const table = document.getElementById('customer-table');
   if (table) table.classList.add('opacity-50', 'pointer-events-none');
   try {
-    // Check for linked sales/payments
     showToast('Checking for linked sales/payments...');
     const sales = await fetch(`${API}/sales?customerId=${id}`).then(r => r.json());
     const payments = await fetch(`${API}/payments?customerId=${id}`).then(r => r.json());
@@ -785,7 +848,7 @@ function setupFormListeners(tab) {
           showToast('Payment added successfully');
           paymentsForm.reset();
           await loadData(tab);
-        } delančji, e) {
+        } catch (e) {
           log(`Error adding payment: ${e.message}`, 'error');
           showToast(`Error: ${e.message}`);
         } finally {

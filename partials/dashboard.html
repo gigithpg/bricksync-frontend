@@ -27,11 +27,47 @@
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div class="bg-white p-6 rounded-lg shadow-md">
       <h3 class="text-lg font-semibold text-slate-900 mb-4">Sales Over Time</h3>
+      <div class="flex flex-col md:flex-row gap-4 mb-4">
+        <div>
+          <label for="sales-date-filter" class="block text-sm font-medium text-slate-700">Date</label>
+          <input type="text" id="sales-date-filter" class="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2" placeholder="Select date">
+        </div>
+        <div>
+          <label for="sales-month-filter" class="block text-sm font-medium text-slate-700">Month</label>
+          <select id="sales-month-filter" class="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+            <option value="">Select Month</option>
+            <option value="2025-01">January 2025</option>
+            <option value="2025-02">February 2025</option>
+            <option value="2025-03">March 2025</option>
+            <option value="2025-04">April 2025</option>
+            <option value="2025-05">May 2025</option>
+            <option value="2025-06">June 2025</option>
+            <option value="2025-07">July 2025</option>
+            <option value="2025-08">August 2025</option>
+            <option value="2025-09">September 2025</option>
+            <option value="2025-10">October 2025</option>
+            <option value="2025-11">November 2025</option>
+            <option value="2025-12">December 2025</option>
+          </select>
+        </div>
+        <div>
+          <label for="sales-year-filter" class="block text-sm font-medium text-slate-700">Year</label>
+          <select id="sales-year-filter" class="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+            <option value="">Select Year</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+          </select>
+        </div>
+      </div>
       <canvas id="sales-chart" class="w-full h-64"></canvas>
     </div>
     <div class="bg-white p-6 rounded-lg shadow-md">
-      <h3 class="text-lg font-semibold text-slate-900 mb-4">Payment Methods</h3>
-      <canvas id="payment-chart" class="w-full h-64"></canvas>
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">Sales Per Customer</h3>
+      <canvas id="sales-per-customer-chart" class="w-full h-64"></canvas>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">Payments Per Customer</h3>
+      <canvas id="payment-per-customer-chart" class="w-full h-64"></canvas>
     </div>
     <div class="bg-white p-6 rounded-lg shadow-md">
       <h3 class="text-lg font-semibold text-slate-900 mb-4">Balance Trends</h3>
