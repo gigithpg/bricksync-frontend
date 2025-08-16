@@ -3,51 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BrickSync - Sales & Payments</title>
-  <link rel="stylesheet" href="css/flatpickr.min.css">
+  <title>BrickSync</title>
   <link rel="stylesheet" href="output.css">
+  <link rel="stylesheet" href="css/flatpickr.min.css">
 </head>
-<body class="bg-gray-100 font-sans text-gray-900 min-h-screen flex flex-col">
-  <!-- Header -->
-  <header class="bg-white shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-      <h1 class="text-2xl font-bold text-gray-900">BrickSync</h1>
-    </div>
-  </header>
+<body class="bg-slate-100 font-sans antialiased">
+  <div class="flex flex-col min-h-screen md:flex-row">
+    <!-- Header for Mobile -->
+    <header class="bg-indigo-800 text-white p-4 flex justify-between items-center md:hidden shadow-lg">
+      <h1 class="text-xl font-bold">BrickSync</h1>
+      <button id="hamburger-menu" class="text-white focus:outline-none">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+    </header>
 
-  <!-- Main Content -->
-  <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <!-- Navigation (Mobile: Bottom, Desktop: Sidebar) -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-lg md:sticky md:top-0 md:h-screen md:w-64 md:flex md:flex-col md:p-4 md:bg-gray-50 z-10">
-      <div class="flex justify-around md:flex-col md:space-y-2">
-        <button class="tab-button active bg-blue-600 text-white md:bg-gray-100 md:text-gray-900 md:hover:bg-blue-100 px-4 py-2 text-sm font-medium rounded-t-lg md:rounded-lg transition-colors duration-200" data-tab="dashboard">Dashboard</button>
-        <button class="tab-button md:bg-gray-100 md:hover:bg-blue-100 px-4 py-2 text-sm font-medium rounded-t-lg md:rounded-lg transition-colors duration-200" data-tab="customers">Customers</button>
-        <button class="tab-button md:bg-gray-100 md:hover:bg-blue-100 px-4 py-2 text-sm font-medium rounded-t-lg md:rounded-lg transition-colors duration-200" data-tab="sales">Sales</button>
-        <button class="tab-button md:bg-gray-100 md:hover:bg-blue-100 px-4 py-2 text-sm font-medium rounded-t-lg md:rounded-lg transition-colors duration-200" data-tab="payments">Payments</button>
-        <button class="tab-button md:bg-gray-100 md:hover:bg-blue-100 px-4 py-2 text-sm font-medium rounded-t-lg md:rounded-lg transition-colors duration-200" data-tab="transactions">Transactions</button>
-        <button class="tab-button md:bg-gray-100 md:hover:bg-blue-100 px-4 py-2 text-sm font-medium rounded-t-lg md:rounded-lg transition-colors duration-200" data-tab="balances">Balances</button>
-        <button class="tab-button md:bg-gray-100 md:hover:bg-blue-100 px-4 py-2 text-sm font-medium rounded-t-lg md:rounded-lg transition-colors duration-200" data-tab="logs">Logs</button>
-        <button class="tab-button md:bg-gray-100 md:hover:bg-blue-100 px-4 py-2 text-sm font-medium rounded-t-lg md:rounded-lg transition-colors duration-200" data-tab="settings">Settings</button>
+    <!-- Sidebar -->
+    <nav id="sidebar" class="bg-indigo-800 text-white w-full md:w-64 fixed top-0 right-0 h-full md:h-screen hidden md:block z-20 shadow-xl">
+      <div class="p-4">
+        <h1 class="text-2xl font-bold md:block hidden">BrickSync</h1>
+        <ul class="mt-4 space-y-2">
+          <li>
+            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 active bg-indigo-600 text-white md:bg-indigo-100 md:text-indigo-800 rounded-md" data-tab="dashboard">Dashboard</button>
+          </li>
+          <li>
+            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="customers">Customers</button>
+          </li>
+          <li>
+            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="sales">Sales</button>
+          </li>
+          <li>
+            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="payments">Payments</button>
+          </li>
+          <li>
+            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="transactions">Transactions</button>
+          </li>
+          <li>
+            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="balances">Balances</button>
+          </li>
+          <li>
+            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="logs">Logs</button>
+          </li>
+          <li>
+            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="settings">Settings</button>
+          </li>
+        </ul>
       </div>
     </nav>
 
-    <!-- Tab Content Container -->
-    <div id="tab-content" class="md:ml-64 min-h-[400px]"></div>
-
-    <!-- Modal -->
-    <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-20">
-      <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-        <h2 id="modal-title" class="text-lg font-semibold mb-4"></h2>
-        <p id="modal-message" class="text-gray-600 mb-4"></p>
-        <div class="flex justify-end space-x-2">
-          <button id="modal-cancel" class="bg-gray-300 text-gray-900 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors">Cancel</button>
-          <button id="modal-confirm" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">Confirm</button>
-        </div>
-      </div>
-    </div>
-  </main>
+    <!-- Main Content -->
+    <main class="flex-1 p-4 md:mr-64">
+      <div id="tab-content" class="container mx-auto"></div>
+    </main>
+  </div>
 
   <script src="js/flatpickr.min.js"></script>
+  <script src="js/chart.min.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

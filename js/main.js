@@ -46,6 +46,10 @@ async function loadTabContent(tab) {
     // Reload data for the active tab
     await loadData(tab);
     logLayout(`Tab ${tab} fully initialized`);
+    // Collapse sidebar on tab click in mobile view
+    if (window.innerWidth < 768) {
+      toggleSidebar(false);
+    }
   } catch (e) {
     log(`Error loading tab content ${tab}: ${e.message}`, 'error');
     tabContent.innerHTML = `<p class="text-red-600 p-4">Error loading ${tab} content: ${e.message}</p>`;
@@ -62,10 +66,15 @@ async function loadData(activeTab) {
       return r.json();
     });
     log(`Loaded ${customers.length} customers`);
-    if (activeTab === 'customers' || activeTab === 'dashboard') {
+    if (activeTab === 'customers') {
       renderCustomers(customers);
     }
-    populateCustomerDropdowns(customers, activeTab);
+    if (activeTab === 'sales' || activeTab === 'payments') {
+      populateCustomerDropdowns(customers, activeTab);
+    }
+    if (activeTab === 'dashboard') {
+      renderDashboard(customers);
+    }
 
     // Fetch and render sales
     if (activeTab === 'sales' || activeTab === 'dashboard') {
@@ -108,7 +117,11 @@ async function loadData(activeTab) {
         return r.json();
       });
       log(`Loaded ${balances.length} balances`);
-      renderTable('balance-table', balances);
+      if (activeTab === 'dashboard') {
+        renderDashboardCharts(balances, [], []); // Pass sales and payments later if needed
+      } else {
+        renderTable('balance-table', balances);
+      }
     }
 
     // Fetch and render logs
@@ -135,25 +148,25 @@ function renderTable(tableId, data) {
     return;
   }
   if (!data.length) {
-    table.innerHTML = '<tr><td colspan="100" class="border px-6 py-4 text-center text-gray-500">No data</td></tr>';
+    table.innerHTML = '<tr><td colspan="100" class="border px-6 py-4 text-center text-slate-500">No data</td></tr>';
     log(`No data for table ${tableId}`);
     return;
   }
   const headers = Object.keys(data[0]);
   table.innerHTML = `
-    <thead class="bg-gray-50">
-      <tr>${headers.map(h => `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${h}</th>`).join('')}${tableId.includes('customer') || tableId.includes('sale') || tableId.includes('payment') ? '<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>' : ''}</tr>
+    <thead class="bg-slate-50">
+      <tr>${headers.map(h => `<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">${h}</th>`).join('')}${tableId.includes('customer') || tableId.includes('sale') || tableId.includes('payment') ? '<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>' : ''}</tr>
     </thead>
-    <tbody class="bg-white divide-y divide-gray-200">${data.map(row => `
+    <tbody class="bg-white divide-y divide-slate-200">${data.map(row => `
       <tr>${headers.map(h => {
         if (h === 'Pending Balance') {
           const value = row[h];
           const formatted = value >= 0 ? `+${value.toFixed(2)}` : value.toFixed(2);
-          const color = value < 0 ? 'text-red-600' : 'text-green-600';
-          return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${color}">${formatted}</td>`;
+          const color = value < 0 ? 'text-red-600' : 'text-emerald-600';
+          return `<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 ${color}">${formatted}</td>`;
         }
-        return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${row[h]}</td>`;
-      }).join('')}${tableId.includes('customer') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700" onclick="deleteCustomer('${row['Customer ID']}')">Delete</button></td>` : ''}${tableId.includes('sale') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700" onclick="deleteSale('${row['Sale ID']}')">Delete</button></td>` : ''}${tableId.includes('payment') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700" onclick="deletePayment('${row['Payment ID']}')">Delete</button></td>` : ''}</tr>
+        return `<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">${row[h]}</td>`;
+      }).join('')}${tableId.includes('customer') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors" onclick="deleteCustomer('${row['Customer ID']}')">Delete</button></td>` : ''}${tableId.includes('sale') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors" onclick="deleteSale('${row['Sale ID']}')">Delete</button></td>` : ''}${tableId.includes('payment') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors" onclick="deletePayment('${row['Payment ID']}')">Delete</button></td>` : ''}</tr>
     `).join('')}</tbody>
   `;
   logLayout(`Table ${tableId} rendered successfully`);
@@ -167,7 +180,7 @@ function renderCustomers(customers) {
 function renderSales(sales, activeTab) {
   logLayout(`Rendering sales table with ${sales.length} sales for tab ${activeTab}`);
   if (activeTab === 'dashboard') {
-    renderTable('recent-sales-table', sales.slice(0, 5)); // Limit to 5 for dashboard
+    renderDashboardCharts([], sales, []);
   } else {
     renderTable('sales-table', sales);
   }
@@ -176,7 +189,7 @@ function renderSales(sales, activeTab) {
 function renderPayments(payments, activeTab) {
   logLayout(`Rendering payments table with ${payments.length} payments for tab ${activeTab}`);
   if (activeTab === 'dashboard') {
-    renderTable('recent-payments-table', payments.slice(0, 5)); // Limit to 5 for dashboard
+    renderDashboardCharts([], [], payments);
   } else {
     renderTable('payment-table', payments);
   }
@@ -190,20 +203,93 @@ function renderLogs(logs) {
     return;
   }
   if (!logs.length) {
-    logList.innerHTML = '<li class="text-gray-500">No logs available</li>';
+    logList.innerHTML = '<li class="text-slate-500">No logs available</li>';
     log('No logs to render');
     return;
   }
   logList.innerHTML = logs.map(log => `
-    <li class="text-sm text-gray-900">${log.Timestamp}: ${log.Message}</li>
+    <li class="text-sm text-slate-900">${log.Timestamp}: ${log.Message}</li>
   `).join('');
   logLayout('Logs rendered successfully');
+}
+
+function renderDashboard(customers) {
+  logLayout(`Rendering dashboard cards with ${customers.length} customers`);
+  const totalCustomersCard = document.getElementById('total-customers');
+  if (totalCustomersCard) {
+    totalCustomersCard.textContent = customers.length;
+    logLayout('Total customers card updated');
+  } else {
+    log('Total customers card not found', 'error');
+  }
+}
+
+function renderDashboardCharts(balances, sales, payments) {
+  logLayout('Rendering dashboard charts');
+  const salesChartCanvas = document.getElementById('sales-chart');
+  const paymentChartCanvas = document.getElementById('payment-chart');
+
+  if (salesChartCanvas && sales.length) {
+    const salesByDate = sales.reduce((acc, sale) => {
+      acc[sale.Date] = (acc[sale.Date] || 0) + sale.Amount;
+      return acc;
+    }, {});
+    new Chart(salesChartCanvas, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(salesByDate),
+        datasets: [{
+          label: 'Sales Amount',
+          data: Object.values(salesByDate),
+          backgroundColor: 'rgba(99, 102, 241, 0.6)',
+          borderColor: 'rgba(99, 102, 241, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+    logLayout('Sales chart rendered');
+  }
+
+  if (paymentChartCanvas && payments.length) {
+    const paymentMethods = payments.reduce((acc, payment) => {
+      acc[payment['Payment Method']] = (acc[payment['Payment Method']] || 0) + 1;
+      return acc;
+    }, {});
+    new Chart(paymentChartCanvas, {
+      type: 'pie',
+      data: {
+        labels: Object.keys(paymentMethods),
+        datasets: [{
+          data: Object.values(paymentMethods),
+          backgroundColor: ['rgba(99, 102, 241, 0.6)', 'rgba(16, 185, 129, 0.6)', 'rgba(239, 68, 68, 0.6)', 'rgba(249, 115, 22, 0.6)', 'rgba(107, 114, 128, 0.6)']
+        }]
+      }
+    });
+    logLayout('Payment chart rendered');
+  }
+
+  if (balances && balances.length) {
+    const totalBalanceCard = document.getElementById('total-balance');
+    if (totalBalanceCard) {
+      const total = balances.reduce((sum, b) => sum + b['Pending Balance'], 0);
+      totalBalanceCard.textContent = total.toFixed(2);
+      totalBalanceCard.classList.add(total < 0 ? 'text-red-600' : 'text-emerald-600');
+      logLayout('Total balance card updated');
+    } else {
+      log('Total balance card not found', 'error');
+    }
+  }
 }
 
 function populateCustomerDropdowns(customers, activeTab) {
   logLayout(`Populating customer dropdowns with ${customers.length} customers for tab ${activeTab}`);
   const opts = customers.map(c => `<option value="${c['Customer Name']}">${c['Customer Name']}</option>`).join('');
-  if (activeTab === 'sales' || activeTab === 'dashboard') {
+  if (activeTab === 'sales') {
     const saleCustomer = document.getElementById('sale-customer');
     if (saleCustomer) {
       saleCustomer.innerHTML = `<option value="">Select Customer</option>${opts}`;
@@ -212,7 +298,7 @@ function populateCustomerDropdowns(customers, activeTab) {
       log('Sale customer dropdown not found', 'error');
     }
   }
-  if (activeTab === 'payments' || activeTab === 'dashboard') {
+  if (activeTab === 'payments') {
     const paymentCustomer = document.getElementById('payment-customer');
     if (paymentCustomer) {
       paymentCustomer.innerHTML = `<option value="">Select Customer</option>${opts}`;
@@ -288,6 +374,26 @@ function updateSaleAmount() {
   }
 }
 
+function toggleSidebar(show) {
+  const sidebar = document.getElementById('sidebar');
+  const hamburger = document.getElementById('hamburger-menu');
+  if (sidebar && hamburger) {
+    if (show) {
+      sidebar.classList.remove('hidden');
+      sidebar.classList.add('block');
+      hamburger.classList.add('hidden');
+      logLayout('Sidebar opened');
+    } else {
+      sidebar.classList.remove('block');
+      sidebar.classList.add('hidden');
+      hamburger.classList.remove('hidden');
+      logLayout('Sidebar collapsed');
+    }
+  } else {
+    log('Sidebar or hamburger menu not found', 'error');
+  }
+}
+
 function setupFormListeners(tab) {
   logLayout(`Setting up form listeners for tab: ${tab}`);
   if (tab === 'customers') {
@@ -323,7 +429,7 @@ function setupFormListeners(tab) {
     }
   }
 
-  if (tab === 'sales' || tab === 'dashboard') {
+  if (tab === 'sales') {
     const salesForm = document.getElementById('sales-form');
     if (salesForm) {
       salesForm.addEventListener('submit', async (e) => {
@@ -336,7 +442,7 @@ function setupFormListeners(tab) {
           Rate: parseFloat(formData.get('Rate')) || 0,
           'Vehicle Rent': parseFloat(formData.get('Vehicle Rent')) || 0,
           Amount: parseFloat(formData.get('Amount')) || 0,
-          'Payment Method': formData.get('Payment Method'),
+          'Payment Method': formData.get('Payment Method') || '',
           'Payment Received': parseFloat(formData.get('Payment Received')) || 0,
           Remarks: formData.get('Remarks') || ''
         };
@@ -406,7 +512,7 @@ function setupFormListeners(tab) {
     }
   }
 
-  if (tab === 'payments' || tab === 'dashboard') {
+  if (tab === 'payments') {
     const paymentsForm = document.getElementById('payment-form');
     if (paymentsForm) {
       paymentsForm.addEventListener('submit', async (e) => {
@@ -500,10 +606,10 @@ function setupEventListeners() {
       button.addEventListener('click', async () => {
         logLayout(`Switching to tab: ${button.dataset.tab}`);
         document.querySelectorAll('.tab-button').forEach(btn => {
-          btn.classList.remove('active', 'bg-blue-600', 'text-white', 'md:bg-blue-100');
+          btn.classList.remove('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
           logLayout(`Removed active classes from button: ${btn.dataset.tab}`);
         });
-        button.classList.add('active', 'bg-blue-600', 'text-white', 'md:bg-blue-100');
+        button.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
         logLayout(`Added active classes to button: ${button.dataset.tab}`);
         await loadTabContent(button.dataset.tab);
       });
@@ -511,6 +617,22 @@ function setupEventListeners() {
   } else {
     log('No tab buttons found', 'error');
   }
+  // Setup hamburger menu toggle
+  const hamburger = document.getElementById('hamburger-menu');
+  if (hamburger) {
+    hamburger.addEventListener('click', () => toggleSidebar(true));
+    logLayout('Hamburger menu listener added');
+  } else {
+    log('Hamburger menu not found', 'error');
+  }
+  // Setup outside click to collapse sidebar
+  document.addEventListener('click', (e) => {
+    const sidebar = document.getElementById('sidebar');
+    const hamburger = document.getElementById('hamburger-menu');
+    if (window.innerWidth < 768 && sidebar && !sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+      toggleSidebar(false);
+    }
+  });
   logLayout('Event listeners setup complete');
 }
 
