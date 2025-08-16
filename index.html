@@ -7,60 +7,48 @@
   <link rel="stylesheet" href="output.css">
   <link rel="stylesheet" href="css/flatpickr.min.css">
 </head>
-<body class="bg-slate-100 font-sans antialiased">
-  <div class="flex flex-col min-h-screen md:flex-row">
-    <!-- Header for Mobile -->
-    <header class="bg-indigo-800 text-white p-4 flex justify-between items-center md:hidden shadow-lg">
-      <h1 class="text-xl font-bold">BrickSync</h1>
-      <button id="hamburger-menu" class="text-white focus:outline-none">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-      </button>
-    </header>
-
+<body class="bg-slate-100 font-sans">
+  <div class="flex h-screen">
     <!-- Sidebar -->
-    <nav id="sidebar" class="bg-indigo-800 text-white w-full md:w-64 fixed top-0 left-0 h-full md:h-screen hidden md:block z-20 shadow-xl">
+    <div id="sidebar" class="hidden md:block w-64 bg-white shadow-md transition-none">
       <div class="p-4">
-        <h1 class="text-2xl font-bold md:block hidden">BrickSync</h1>
-        <ul class="mt-4 space-y-2">
-          <li>
-            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 active bg-indigo-600 text-white md:bg-indigo-100 md:text-indigo-800 rounded-md" data-tab="dashboard">Dashboard</button>
-          </li>
-          <li>
-            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="customers">Customers</button>
-          </li>
-          <li>
-            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="sales">Sales</button>
-          </li>
-          <li>
-            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="payments">Payments</button>
-          </li>
-          <li>
-            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="transactions">Transactions</button>
-          </li>
-          <li>
-            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="balances">Balances</button>
-          </li>
-          <li>
-            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="logs">Logs</button>
-          </li>
-          <li>
-            <button class="tab-button w-full text-left px-4 py-2 hover:bg-indigo-900 transition-colors duration-200 rounded-md" data-tab="settings">Settings</button>
-          </li>
-        </ul>
+        <h1 class="text-2xl font-bold text-indigo-600">BrickSync</h1>
       </div>
-    </nav>
-
+      <nav class="mt-4">
+        <a href="#" data-tab="landing" class="tab-button block px-4 py-2 text-sm text-slate-700 hover:bg-indigo-100 md:bg-indigo-100 md:text-indigo-800">Landing</a>
+        <a href="#" data-tab="dashboard" class="tab-button block px-4 py-2 text-sm text-slate-700 hover:bg-indigo-100 md:bg-indigo-100 md:text-indigo-800 active bg-indigo-600 text-white">Dashboard</a>
+        <a href="#" data-tab="customers" class="tab-button block px-4 py-2 text-sm text-slate-700 hover:bg-indigo-100">Customers</a>
+        <a href="#" data-tab="sales" class="tab-button block px-4 py-2 text-sm text-slate-700 hover:bg-indigo-100">Sales</a>
+        <a href="#" data-tab="payments" class="tab-button block px-4 py-2 text-sm text-slate-700 hover:bg-indigo-100">Payments</a>
+        <a href="#" data-tab="transactions" class="tab-button block px-4 py-2 text-sm text-slate-700 hover:bg-indigo-100">Transactions</a>
+        <a href="#" data-tab="balances" class="tab-button block px-4 py-2 text-sm text-slate-700 hover:bg-indigo-100">Balances</a>
+        <a href="#" data-tab="logs" class="tab-button block px-4 py-2 text-sm text-slate-700 hover:bg-indigo-100">Logs</a>
+        <a href="#" data-tab="settings" class="tab-button block px-4 py-2 text-sm text-slate-700 hover:bg-indigo-100">Settings</a>
+      </nav>
+    </div>
     <!-- Main Content -->
-    <main class="flex-1 p-4 md:ml-64">
-      <div id="tab-content" class="container mx-auto"></div>
-      <div id="toast" class="hidden fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg"></div>
-    </main>
+    <div class="flex-1 flex flex-col">
+      <!-- Header -->
+      <header class="bg-white shadow-sm p-4 flex justify-between items-center">
+        <button id="hamburger-menu" class="md:hidden text-indigo-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+          </svg>
+        </button>
+        <h2 class="text-lg font-semibold text-slate-900">Dashboard</h2>
+        <div></div>
+      </header>
+      <!-- Toast Notification -->
+      <div id="toast" class="hidden fixed top-4 right-4 bg-indigo-600 text-white px-4 py-2 rounded-md shadow-md"></div>
+      <!-- Tab Content -->
+      <main id="tab-content" class="flex-1 p-6 overflow-auto"></main>
+    </div>
   </div>
-
   <script src="js/flatpickr.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/api.js"></script>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/forms.js"></script>
 </body>
 </html>
