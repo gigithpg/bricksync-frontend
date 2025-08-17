@@ -32,7 +32,7 @@ export function renderTable(tableId, data, activeTab, sortBy = null, sortOrder =
     return;
   }
   if (!data.length) {
-    table.innerHTML = '<tr><td colspan="100" class="border px-6 py-4 text-center text-slate-500">No data</td></tr>';
+    table.innerHTML = '<tr><td colspan="100" class="border px-6 py-4 text-center text-gray-500">No data</td></tr>';
     log(`No data for table ${tableId}`);
     return;
   }
@@ -46,18 +46,18 @@ export function renderTable(tableId, data, activeTab, sortBy = null, sortOrder =
   }
   const headers = Object.keys(data[0]);
   table.innerHTML = `
-    <thead class="bg-slate-50">
-      <tr>${headers.map(h => `<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer" data-sort="${h}">${h}${h === 'Date' ? `<span class="ml-2">${sortBy === 'Date' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}</span>` : ''}</th>`).join('')}${tableId.includes('customer') || tableId.includes('sale') || tableId.includes('payment') ? '<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>' : ''}</tr>
+    <thead class="bg-gray-700">
+      <tr>${headers.map(h => `<th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer" data-sort="${h}">${h}${h === 'Date' ? `<span class="ml-2">${sortBy === 'Date' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}</span>` : ''}</th>`).join('')}${tableId.includes('customer') || tableId.includes('sale') || tableId.includes('payment') ? '<th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>' : ''}</tr>
     </thead>
-    <tbody class="bg-white divide-y divide-slate-200">${sortedData.map(row => `
+    <tbody class="bg-gray-800 divide-y divide-gray-600">${sortedData.map(row => `
       <tr>${headers.map(h => {
         if (h === 'Pending Balance') {
           const value = row[h];
           const formatted = value >= 0 ? `+${value.toFixed(2)}` : value.toFixed(2);
-          const color = value < 0 ? 'text-red-600' : 'text-emerald-600';
-          return `<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 ${color}">${formatted}</td>`;
+          const color = value < 0 ? 'text-red-400' : 'text-teal-400';
+          return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-100 ${color}">${formatted}</td>`;
         }
-        return `<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">${row[h]}</td>`;
+        return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-100">${row[h]}</td>`;
       }).join('')}${tableId.includes('customer') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-customer" data-name="${row['Customer Name']}">Delete</button></td>` : ''}${tableId.includes('sale') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-sale" data-id="${row['Sale ID']}">Delete</button></td>` : ''}${tableId.includes('payment') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-payment" data-id="${row['Payment ID']}">Delete</button></td>` : ''}</tr>
     `).join('')}</tbody>
   `;
@@ -94,12 +94,12 @@ export function renderLogs(logs) {
     return;
   }
   if (!logs.length) {
-    logList.innerHTML = '<li class="text-slate-500">No logs available</li>';
+    logList.innerHTML = '<li class="text-gray-500">No logs available</li>';
     log('No logs to render');
     return;
   }
   logList.innerHTML = logs.map(log => `
-    <li class="text-sm text-slate-900">${log.Timestamp}: ${log.Message}</li>
+    <li class="text-sm text-gray-300">${log.Timestamp}: ${log.Message}</li>
   `).join('');
   logLayout('Logs rendered successfully');
 }
@@ -122,12 +122,17 @@ export function renderDashboardCharts(balances, sales, payments) {
   const paymentPerCustomerCanvas = document.getElementById('payment-per-customer-chart');
   const balanceChartCanvas = document.getElementById('balance-chart');
 
+  const chartColors = {
+    background: 'rgba(13, 148, 136, 0.2)', // Teal with opacity
+    border: 'rgba(13, 148, 136, 1)', // Solid teal
+  };
+
   if (salesChartCanvas && sales.length) {
     let filteredSales = [...sales];
     const dateFilter = document.getElementById('sales-date-filter');
     const monthFilter = document.getElementById('sales-month-filter');
     const yearFilter = document.getElementById('sales-year-filter');
-    
+
     const applySalesFilters = () => {
       filteredSales = [...sales];
       if (dateFilter.value) {
@@ -145,37 +150,43 @@ export function renderDashboardCharts(balances, sales, payments) {
         acc[sale.Date] = (acc[sale.Date] || 0) + sale.Amount;
         return acc;
       }, {});
-      const chart = Chart.getChart(salesChartCanvas);
-      if (chart) chart.destroy();
-      new Chart(salesChartCanvas, {
-        type: 'bar',
+      const labels = Object.keys(salesByDate).sort((a, b) => {
+        const dateA = new Date(a.split('/').reverse().join('-'));
+        const dateB = new Date(b.split('/').reverse().join('-'));
+        return dateA - dateB;
+      });
+      const data = labels.map(date => salesByDate[date]);
+
+      if (window.salesChartInstance) window.salesChartInstance.destroy();
+      window.salesChartInstance = new Chart(salesChartCanvas, {
+        type: 'line',
         data: {
-          labels: Object.keys(salesByDate),
+          labels,
           datasets: [{
-            label: 'Sales Amount',
-            data: Object.values(salesByDate),
-            backgroundColor: 'rgba(99, 102, 241, 0.6)',
-            borderColor: 'rgba(99, 102, 241, 1)',
-            borderWidth: 1
-          }]
+            label: 'Sales by Date',
+            data,
+            backgroundColor: chartColors.background,
+            borderColor: chartColors.border,
+            borderWidth: 2,
+            fill: true,
+          }],
         },
         options: {
-          scales: { y: { beginAtZero: true } }
-        }
+          responsive: true,
+          scales: {
+            x: { title: { display: true, text: 'Date', color: '#d1d5db' } },
+            y: { title: { display: true, text: 'Amount', color: '#d1d5db' }, beginAtZero: true },
+          },
+          plugins: { legend: { labels: { color: '#d1d5db' } } },
+        },
       });
-      logLayout('Sales chart rendered');
     };
 
-    dateFilter.addEventListener('change', applySalesFilters);
-    monthFilter.addEventListener('change', () => {
-      if (monthFilter.value) dateFilter.value = '';
-      applySalesFilters();
-    });
-    yearFilter.addEventListener('change', () => {
-      if (yearFilter.value) dateFilter.value = '';
-      applySalesFilters();
-    });
     applySalesFilters();
+    dateFilter.addEventListener('change', applySalesFilters);
+    monthFilter.addEventListener('change', applySalesFilters);
+    yearFilter.addEventListener('change', applySalesFilters);
+    logLayout('Sales chart rendered');
   }
 
   if (salesPerCustomerCanvas && sales.length) {
@@ -183,15 +194,30 @@ export function renderDashboardCharts(balances, sales, payments) {
       acc[sale['Customer Name']] = (acc[sale['Customer Name']] || 0) + sale.Amount;
       return acc;
     }, {});
-    new Chart(salesPerCustomerCanvas, {
-      type: 'pie',
+    const labels = Object.keys(salesByCustomer);
+    const data = labels.map(customer => salesByCustomer[customer]);
+
+    if (window.salesPerCustomerChartInstance) window.salesPerCustomerChartInstance.destroy();
+    window.salesPerCustomerChartInstance = new Chart(salesPerCustomerCanvas, {
+      type: 'bar',
       data: {
-        labels: Object.keys(salesByCustomer),
+        labels,
         datasets: [{
-          data: Object.values(salesByCustomer),
-          backgroundColor: ['rgba(99, 102, 241, 0.6)', 'rgba(16, 185, 129, 0.6)', 'rgba(239, 68, 68, 0.6)', 'rgba(249, 115, 22, 0.6)', 'rgba(107, 114, 128, 0.6)']
-        }]
-      }
+          label: 'Sales per Customer',
+          data,
+          backgroundColor: chartColors.background,
+          borderColor: chartColors.border,
+          borderWidth: 1,
+        }],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { title: { display: true, text: 'Customer', color: '#d1d5db' } },
+          y: { title: { display: true, text: 'Amount', color: '#d1d5db' }, beginAtZero: true },
+        },
+        plugins: { legend: { labels: { color: '#d1d5db' } } },
+      },
     });
     logLayout('Sales per customer chart rendered');
   }
@@ -201,123 +227,86 @@ export function renderDashboardCharts(balances, sales, payments) {
       acc[payment['Customer Name']] = (acc[payment['Customer Name']] || 0) + payment['Payment Received'];
       return acc;
     }, {});
-    new Chart(paymentPerCustomerCanvas, {
-      type: 'pie',
+    const labels = Object.keys(paymentsByCustomer);
+    const data = labels.map(customer => paymentsByCustomer[customer]);
+
+    if (window.paymentPerCustomerChartInstance) window.paymentPerCustomerChartInstance.destroy();
+    window.paymentPerCustomerChartInstance = new Chart(paymentPerCustomerCanvas, {
+      type: 'bar',
       data: {
-        labels: Object.keys(paymentsByCustomer),
+        labels,
         datasets: [{
-          data: Object.values(paymentsByCustomer),
-          backgroundColor: ['rgba(99, 102, 241, 0.6)', 'rgba(16, 185, 129, 0.6)', 'rgba(239, 68, 68, 0.6)', '249, 115, 22, 0.6)', 'rgba(107, 114, 128, 0.6)']
-        }]
-      }
+          label: 'Payments per Customer',
+          data,
+          backgroundColor: chartColors.background,
+          borderColor: chartColors.border,
+          borderWidth: 1,
+        }],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { title: { display: true, text: 'Customer', color: '#d1d5db' } },
+          y: { title: { display: true, text: 'Amount', color: '#d1d5db' }, beginAtZero: true },
+        },
+        plugins: { legend: { labels: { color: '#d1d5db' } } },
+      },
     });
     logLayout('Payments per customer chart rendered');
   }
 
   if (balanceChartCanvas && balances.length) {
-    const balanceByCustomer = balances.reduce((acc, b) => {
-      acc[b['Customer Name']] = b['Pending Balance'];
-      return acc;
-    }, {});
-    new Chart(balanceChartCanvas, {
-      type: 'line',
+    const labels = balances.map(b => b['Customer Name']);
+    const data = balances.map(b => b['Pending Balance']);
+
+    if (window.balanceChartInstance) window.balanceChartInstance.destroy();
+    window.balanceChartInstance = new Chart(balanceChartCanvas, {
+      type: 'bar',
       data: {
-        labels: Object.keys(balanceByCustomer),
+        labels,
         datasets: [{
-          label: 'Pending Balance',
-          data: Object.values(balanceByCustomer),
-          borderColor: 'rgba(16, 185, 129, 1)',
-          fill: false
-        }]
+          label: 'Balance by Customer',
+          data,
+          backgroundColor: data.map(value => value >= 0 ? 'rgba(13, 148, 136, 0.2)' : 'rgba(239, 68, 68, 0.2)'),
+          borderColor: data.map(value => value >= 0 ? 'rgba(13, 148, 136, 1)' : 'rgba(239, 68, 68, 1)'),
+          borderWidth: 1,
+        }],
       },
       options: {
-        scales: { y: { beginAtZero: true } }
-      }
+        responsive: true,
+        scales: {
+          x: { title: { display: true, text: 'Customer', color: '#d1d5db' } },
+          y: { title: { display: true, text: 'Balance', color: '#d1d5db' } },
+        },
+        plugins: { legend: { labels: { color: '#d1d5db' } } },
+      },
     });
     logLayout('Balance chart rendered');
-  }
-
-  if (balances && balances.length) {
-    const totalBalanceCard = document.getElementById('total-balance');
-    if (totalBalanceCard) {
-      const total = balances.reduce((sum, b) => sum + b['Pending Balance'], 0);
-      totalBalanceCard.textContent = total.toFixed(2);
-      totalBalanceCard.classList.add(total < 0 ? 'text-red-600' : 'text-emerald-600');
-      logLayout('Total balance card updated');
-    }
-    const totalSalesCard = document.getElementById('total-sales');
-    if (totalSalesCard && sales.length) {
-      const totalSales = sales.reduce((sum, s) => sum + s.Amount, 0);
-      totalSalesCard.textContent = totalSales.toFixed(2);
-      logLayout('Total sales card updated');
-    }
-    const totalPaymentsCard = document.getElementById('total-payments');
-    if (totalPaymentsCard && payments.length) {
-      const totalPayments = payments.reduce((sum, p) => sum + p['Payment Received'], 0);
-      totalPaymentsCard.textContent = totalPayments.toFixed(2);
-      logLayout('Total payments card updated');
-    }
   }
 }
 
 export function populateCustomerDropdowns(customers, activeTab) {
   logLayout(`Populating customer dropdowns with ${customers.length} customers for tab ${activeTab}`);
-  const opts = customers.map(c => `<option value="${c['Customer Name']}">${c['Customer Name']}</option>`).join('');
-  if (activeTab === 'sales') {
-    const saleCustomer = document.getElementById('sale-customer');
-    if (saleCustomer) {
-      saleCustomer.innerHTML = `<option value="">Select Customer</option>${opts}`;
-      logLayout('Sale customer dropdown populated');
+  const dropdowns = [
+    document.getElementById(`${activeTab === 'sales' ? 'sale' : 'payment'}-customer`),
+    document.getElementById(`${activeTab}-table-filter-customer`),
+  ].filter(Boolean);
+  dropdowns.forEach(dropdown => {
+    if (dropdown) {
+      dropdown.innerHTML = `<option value="">${activeTab === 'sales' ? 'Select Customer' : 'All Customers'}</option>` + customers.map(c => `<option value="${c['Customer Name']}">${c['Customer Name']}</option>`).join('');
+      logLayout(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} ${dropdown.id.includes('filter') ? 'filter' : 'customer'} dropdown populated`);
     } else {
-      log('Sale customer dropdown not found', 'error');
+      log(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} dropdown not found`, 'error');
     }
-    const filterCustomer = document.getElementById('sales-table-filter-customer');
-    if (filterCustomer) {
-      filterCustomer.innerHTML = `<option value="">All Customers</option>${opts}`;
-      logLayout('Sales filter dropdown populated');
-    }
-  }
-  if (activeTab === 'payments') {
-    const paymentCustomer = document.getElementById('payment-customer');
-    if (paymentCustomer) {
-      paymentCustomer.innerHTML = `<option value="">Select Customer</option>${opts}`;
-      logLayout('Payment customer dropdown populated');
-    } else {
-      log('Payment customer dropdown not found', 'error');
-    }
-    const filterCustomer = document.getElementById('payment-table-filter-customer');
-    if (filterCustomer) {
-      filterCustomer.innerHTML = `<option value="">All Customers</option>${opts}`;
-      logLayout('Payments filter dropdown populated');
-    }
-  }
-  if (activeTab === 'transactions') {
-    const filterCustomer = document.getElementById('transaction-table-filter-customer');
-    if (filterCustomer) {
-      filterCustomer.innerHTML = `<option value="">All Customers</option>${opts}`;
-      logLayout('Transactions filter dropdown populated');
-    }
-  }
+  });
 }
 
 export function toggleSidebar(show) {
   const sidebar = document.getElementById('sidebar');
-  const hamburger = document.getElementById('hamburger-menu');
-  if (sidebar && hamburger) {
-    sidebar.classList.add('transition-none');
-    if (show) {
-      sidebar.classList.remove('hidden');
-      sidebar.classList.add('block');
-      hamburger.classList.add('hidden');
-      logLayout('Sidebar opened');
-    } else {
-      sidebar.classList.remove('block');
-      sidebar.classList.add('hidden');
-      hamburger.classList.remove('hidden');
-      logLayout('Sidebar collapsed');
-    }
-    setTimeout(() => sidebar.classList.remove('transition-none'), 0);
+  if (sidebar) {
+    sidebar.classList.toggle('hidden', !show);
+    logLayout(`Sidebar ${show ? 'shown' : 'hidden'}`);
   } else {
-    log('Sidebar or hamburger menu not found', 'error');
+    log('Sidebar not found', 'error');
   }
 }

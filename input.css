@@ -1,5 +1,39 @@
-@import "tailwindcss";
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-900 text-gray-100 font-sans;
+  }
+}
+
+@layer components {
+  .tab-button {
+    @apply block px-4 py-2 text-sm text-gray-300 hover:bg-teal-700 hover:text-white transition-colors;
+  }
+  .tab-button.active {
+    @apply bg-teal-600 text-white md:bg-teal-700 md:text-gray-100;
+  }
+  .table-container {
+    @apply overflow-x-auto;
+  }
+  .form-input {
+    @apply mt-1 block w-full border-gray-600 bg-gray-800 text-gray-100 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm p-2;
+  }
+  .form-label {
+    @apply block text-sm font-medium text-gray-300;
+  }
+  .modal {
+    @apply fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50;
+  }
+  .modal-content {
+    @apply bg-gray-800 p-6 rounded-lg shadow-md space-y-6 w-full max-w-md sm:max-w-lg;
+  }
+}
+
+@responsive {
+  .mobile-form {
+    @apply p-4 sm:p-2;
+  }
+}

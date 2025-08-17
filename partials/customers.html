@@ -1,18 +1,26 @@
-<div class="bg-white p-6 rounded-lg shadow-md space-y-6">
-  <h2 class="text-xl font-bold text-slate-900">Customers</h2>
-  <form id="customer-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-gray-800 p-6 rounded-lg shadow-md space-y-6 mobile-form">
+  <h2 class="text-xl font-bold text-gray-100">Customers</h2>
+  <form id="customer-form" class="space-y-4">
     <div>
-      <label for="customer-name" class="block text-sm font-medium text-slate-700">Customer Name</label>
-      <input type="text" id="customer-name" name="Customer Name" class="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+      <label for="customer-name" class="form-label">Customer Name</label>
+      <input type="text" id="customer-name" name="Customer Name" class="form-input" required>
     </div>
-    <div class="md:col-span-2">
-      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200 w-full md:w-auto">Add</button>
+    <div>
+      <button type="submit" class="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition-colors duration-200 w-full md:w-auto">Add</button>
     </div>
   </form>
-  <div id="loading-spinner-customers" class="hidden flex justify-center items-center">
-    <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
+  <div class="table-container">
+    <table id="customer-table" class="min-w-full bg-gray-800 divide-y divide-gray-600">
+      <thead class="bg-gray-700">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Customer Name</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-600"></tbody>
+    </table>
   </div>
-  <div class="overflow-x-auto">
-    <table id="customer-table" class="min-w-full divide-y divide-slate-200"></table>
+  <div id="loading-spinner-customers" class="hidden text-center">
+    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-600"></div>
   </div>
 </div>

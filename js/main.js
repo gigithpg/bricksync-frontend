@@ -53,7 +53,7 @@ async function loadTabContent(tab) {
     if (tab === 'logs') {
       const clearLogsButton = document.getElementById('clear-logs');
       if (clearLogsButton) {
-        clearLogsButton.addEventListener('click', () => clearLogs(loadData));
+        clearLogsButton.addEventListener('click', () => clearLogs(loadData, renderFunctions));
         logLayout('Clear logs button listener added');
       } else {
         log('Clear logs button not found', 'error');
@@ -68,7 +68,7 @@ async function loadTabContent(tab) {
     }
   } catch (e) {
     log(`Error loading tab content ${tab}: ${e.message}`, 'error');
-    tabContent.innerHTML = `<p class="text-red-600 p-4">Error loading ${tab} content: ${e.message}. Please check Settings.</p>`;
+    tabContent.innerHTML = `<p class="text-red-400 p-4">Error loading ${tab} content: ${e.message}. Please check Settings.</p>`;
     showToast(`Error loading ${tab}: ${e.message}. Please check Settings.`);
   }
 }
@@ -94,10 +94,10 @@ function setupEventListeners() {
       button.addEventListener('click', async () => {
         logLayout(`Switching to tab: ${button.dataset.tab}`);
         document.querySelectorAll('.tab-button').forEach(btn => {
-          btn.classList.remove('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+          btn.classList.remove('active', 'bg-teal-600', 'text-white', 'md:bg-teal-700', 'md:text-gray-100');
           logLayout(`Removed active classes from button: ${btn.dataset.tab}`);
         });
-        button.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+        button.classList.add('active', 'bg-teal-600', 'text-white', 'md:bg-teal-700', 'md:text-gray-100');
         logLayout(`Added active classes to button: ${button.dataset.tab}`);
         if (window.innerWidth < 768) {
           toggleSidebar(false);
@@ -124,18 +124,16 @@ function setupEventListeners() {
     }
   });
 
-  // Add delete listeners
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('delete-customer')) {
-      deleteCustomer(e.target.dataset.name, loadData).then(() => showToast('Customer deleted successfully')).catch(e => showToast(e.message));
+      deleteCustomer(e.target.dataset.name, loadData, renderFunctions).then(() => showToast('Customer deleted successfully')).catch(e => showToast(e.message));
     } else if (e.target.classList.contains('delete-sale')) {
-      deleteSale(e.target.dataset.id, loadData).then(() => showToast('Sale deleted successfully')).catch(e => showToast(e.message));
+      deleteSale(e.target.dataset.id, loadData, renderFunctions).then(() => showToast('Sale deleted successfully')).catch(e => showToast(e.message));
     } else if (e.target.classList.contains('delete-payment')) {
-      deletePayment(e.target.dataset.id, loadData).then(() => showToast('Payment deleted successfully')).catch(e => showToast(e.message));
+      deletePayment(e.target.dataset.id, loadData, renderFunctions).then(() => showToast('Payment deleted successfully')).catch(e => showToast(e.message));
     }
   });
 
-  // Add filter listeners
   document.addEventListener('change', (e) => {
     const target = e.target;
     if (target.id === 'sales-table-filter-customer' || target.id === 'payment-table-filter-customer') {
@@ -171,11 +169,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     const activeTab = localStorage.getItem('activeTab') || 'dashboard';
     document.querySelectorAll('.tab-button').forEach(btn => {
-      btn.classList.remove('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+      btn.classList.remove('active', 'bg-teal-600', 'text-white', 'md:bg-teal-700', 'md:text-gray-100');
     });
     const activeButton = document.querySelector(`.tab-button[data-tab="${activeTab}"]`);
     if (activeButton) {
-      activeButton.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-100', 'md:text-indigo-800');
+      activeButton.classList.add('active', 'bg-teal-600', 'text-white', 'md:bg-teal-700', 'md:text-gray-100');
     }
     await loadTabContent(activeTab);
   }

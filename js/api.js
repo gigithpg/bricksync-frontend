@@ -10,13 +10,11 @@ export async function checkApiUrl() {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   log(`Checking API URL. Is mobile: ${isMobile}, Current API: ${API}`);
   
-  // Skip check if API is cached and valid
   if (localStorage.getItem('apiValid') === API) {
     log(`Using cached API: ${API}`);
     return true;
   }
 
-  // Try current API first
   try {
     const response = await fetch(`${API}/customers`, { method: 'GET', signal: AbortSignal.timeout(5000) });
     if (response.ok) {
@@ -30,7 +28,6 @@ export async function checkApiUrl() {
     log(`API ${API} unreachable: ${e.message}`, 'warn');
   }
 
-  // Try default API
   if (API !== DEFAULT_API) {
     try {
       const response = await fetch(`${DEFAULT_API}/customers`, { method: 'GET', signal: AbortSignal.timeout(5000) });
@@ -48,7 +45,6 @@ export async function checkApiUrl() {
     }
   }
 
-  // If on mobile, try localhost
   if (isMobile) {
     try {
       const response = await fetch('http://localhost:3000/customers', { method: 'GET', signal: AbortSignal.timeout(5000) });
@@ -75,7 +71,6 @@ export async function loadData(activeTab, renderFunctions) {
   try {
     const apiAvailable = await checkApiUrl();
     if (!apiAvailable) {
-      // Fallback to cached data if available
       const cachedData = {
         customers: JSON.parse(localStorage.getItem('customer-table-data') || '[]'),
         sales: JSON.parse(localStorage.getItem('sales-table-data') || '[]'),
@@ -94,7 +89,6 @@ export async function loadData(activeTab, renderFunctions) {
 
     const { renderCustomers, renderSales, renderPayments, renderDashboard, renderDashboardCharts, populateCustomerDropdowns } = renderFunctions;
 
-    // Fetch customers
     log('Fetching customers');
     const customers = await fetch(`${API}/customers`).then(async r => {
       if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
@@ -112,7 +106,6 @@ export async function loadData(activeTab, renderFunctions) {
       renderDashboard(customers);
     }
 
-    // Fetch and render sales
     let sales = [];
     if (activeTab === 'sales' || activeTab === 'dashboard' || activeTab === 'transactions') {
       log('Fetching sales');
@@ -127,7 +120,6 @@ export async function loadData(activeTab, renderFunctions) {
       }
     }
 
-    // Fetch and render payments
     let payments = [];
     if (activeTab === 'payments' || activeTab === 'dashboard' || activeTab === 'transactions') {
       log('Fetching payments');
@@ -142,7 +134,6 @@ export async function loadData(activeTab, renderFunctions) {
       }
     }
 
-    // Fetch and render transactions
     if (activeTab === 'transactions') {
       log('Fetching transactions');
       const transactions = await fetch(`${API}/transactions`).then(async r => {
@@ -154,7 +145,6 @@ export async function loadData(activeTab, renderFunctions) {
       renderFunctions.renderTable('transaction-table', transactions, activeTab);
     }
 
-    // Fetch and render balances
     if (activeTab === 'balances' || activeTab === 'dashboard') {
       log('Fetching balances');
       const balances = await fetch(`${API}/balances`).then(async r => {
@@ -170,7 +160,6 @@ export async function loadData(activeTab, renderFunctions) {
       }
     }
 
-    // Fetch and render logs
     if (activeTab === 'logs') {
       log('Fetching logs');
       const logs = await fetch(`${API}/logs`).then(async r => {
@@ -210,7 +199,7 @@ function renderTabWithCachedData(activeTab, cachedData, renderFunctions) {
   }
 }
 
-export async function deleteCustomer(name, loadData) {
+export async function deleteCustomer(name, loadData, renderFunctions) {
   log(`Deleting customer ${name}`);
   const table = document.getElementById('customer-table');
   if (table) table.classList.add('opacity-50', 'pointer-events-none');
@@ -224,12 +213,12 @@ export async function deleteCustomer(name, loadData) {
       return r.json();
     });
     if (sales.length || payments.length) {
-      throw new Error(`Cannot delete: Found ${sales.length} sales and ${payments.length} payments. Delete them first.`);
+      throw new Error(`Cannot delete: Found ${sales.length} sales and ${payments.length} payments for ${name}. Delete them first.`);
     }
     const res = await fetch(`${API}/customers/${encodeURIComponent(name)}`, { method: 'DELETE' });
-    if (!r.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await r.text()}`);
     log(`Customer ${name} deleted successfully`);
-    await loadData('customers');
+    await loadData('customers', renderFunctions);
   } catch (e) {
     log(`Error deleting customer ${name}: ${e.message}`, 'error');
     throw e;
@@ -238,7 +227,7 @@ export async function deleteCustomer(name, loadData) {
   }
 }
 
-export async function deleteSale(id, loadData) {
+export async function deleteSale(id, loadData, renderFunctions) {
   log(`Deleting sale ${id}`);
   const table = document.getElementById('sales-table');
   if (table) table.classList.add('opacity-50', 'pointer-events-none');
@@ -246,7 +235,7 @@ export async function deleteSale(id, loadData) {
     const res = await fetch(`${API}/sales/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     log(`Sale ${id} deleted successfully`);
-    await loadData('sales');
+    await loadData('sales', renderFunctions);
   } catch (e) {
     log(`Error deleting sale ${id}: ${e.message}`, 'error');
     throw e;
@@ -255,7 +244,7 @@ export async function deleteSale(id, loadData) {
   }
 }
 
-export async function deletePayment(id, loadData) {
+export async function deletePayment(id, loadData, renderFunctions) {
   log(`Deleting payment ${id}`);
   const table = document.getElementById('payment-table');
   if (table) table.classList.add('opacity-50', 'pointer-events-none');
@@ -263,7 +252,7 @@ export async function deletePayment(id, loadData) {
     const res = await fetch(`${API}/payments/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     log(`Payment ${id} deleted successfully`);
-    await loadData('payments');
+    await loadData('payments', renderFunctions);
   } catch (e) {
     log(`Error deleting payment ${id}: ${e.message}`, 'error');
     throw e;
@@ -272,13 +261,13 @@ export async function deletePayment(id, loadData) {
   }
 }
 
-export async function clearLogs(loadData) {
+export async function clearLogs(loadData, renderFunctions) {
   log(`Clearing logs`);
   try {
     const res = await fetch(`${API}/logs`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     log(`Logs cleared successfully`);
-    await loadData('logs');
+    await loadData('logs', renderFunctions);
   } catch (e) {
     log(`Error clearing logs: ${e.message}`, 'error');
     throw e;

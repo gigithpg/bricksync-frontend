@@ -1,7 +1,7 @@
 import { log, API_BASE_KEY, loadData } from './api.js';
 import { logLayout, showToast, showLoadingSpinner, hideLoadingSpinner } from './ui.js';
 
-let API = localStorage.getItem(API_BASE_KEY) || 'http://192.168.1.125:3000'; // Initialize API locally
+let API = localStorage.getItem(API_BASE_KEY) || 'http://192.168.1.125:3000';
 
 export function updateSaleAmount() {
   const qty = parseFloat(document.getElementById('sale-quantity')?.value) || 0;
