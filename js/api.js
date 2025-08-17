@@ -35,7 +35,7 @@ export async function checkApiUrl() {
         API = DEFAULT_API;
         localStorage.setItem(API_BASE_KEY, API);
         localStorage.setItem('apiValid', API);
-        log(`API switched to ${API}`);
+        log(`API switched to ${DEFAULT_API}`);
         return true;
       } else {
         log(`Default API (${DEFAULT_API}) returned HTTP ${response.status}: ${response.statusText}`, 'warn');
@@ -204,19 +204,26 @@ export async function deleteCustomer(name, loadData, renderFunctions) {
   const table = document.getElementById('customer-table');
   if (table) table.classList.add('opacity-50', 'pointer-events-none');
   try {
-    const sales = await fetch(`${API}/sales?customerName=${encodeURIComponent(name)}`).then(async r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
-      return r.json();
-    });
-    const payments = await fetch(`${API}/payments?customerName=${encodeURIComponent(name)}`).then(async r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
-      return r.json();
-    });
+    log(`Fetching sales for ${name} from ${API}/sales?customerName=${encodeURIComponent(name)}`);
+    const salesResponse = await fetch(`${API}/sales?customerName=${encodeURIComponent(name)}`);
+    const sales = await salesResponse.json();
+    log(`Sales response: ${JSON.stringify(sales)}`);
+    
+    log(`Fetching payments for ${name} from ${API}/payments?customerName=${encodeURIComponent(name)}`);
+    const paymentsResponse = await fetch(`${API}/payments?customerName=${encodeURIComponent(name)}`);
+    const payments = await paymentsResponse.json();
+    log(`Payments response: ${JSON.stringify(payments)}`);
+    
+    if (!salesResponse.ok || !paymentsResponse.ok) {
+      throw new Error(`HTTP error: Sales ${salesResponse.status}, Payments ${paymentsResponse.status}`);
+    }
+    
     if (sales.length || payments.length) {
       throw new Error(`Cannot delete: Found ${sales.length} sales and ${payments.length} payments for ${name}. Delete them first.`);
     }
+    
     const res = await fetch(`${API}/customers/${encodeURIComponent(name)}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await r.text()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     log(`Customer ${name} deleted successfully`);
     await loadData('customers', renderFunctions);
   } catch (e) {

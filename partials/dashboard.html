@@ -1,58 +1,58 @@
-<div class="bg-gray-800 p-6 rounded-lg shadow-md space-y-6 mobile-form">
-  <h2 class="text-xl font-bold text-gray-100">Dashboard</h2>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div class="bg-gray-700 p-4 rounded-md">
-      <h3 class="text-sm font-medium text-gray-300">Total Customers</h3>
-      <p id="total-customers" class="text-2xl font-bold text-teal-400">0</p>
+<div class="bg-white p-6 rounded-lg shadow-md space-y-6 mobile-form">
+  <h2 class="text-xl font-bold text-gray-900">Dashboard</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-gray-100 p-4 rounded-md">
+      <h3 class="text-sm font-medium text-gray-700">Total Customers</h3>
+      <p id="total-customers" class="text-2xl font-bold text-indigo-600">0</p>
     </div>
-    <div class="bg-gray-700 p-4 rounded-md">
-      <h3 class="text-sm font-medium text-gray-300">Total Sales</h3>
-      <p id="total-sales" class="text-2xl font-bold text-teal-400">0.00</p>
+    <div class="bg-gray-100 p-4 rounded-md">
+      <h3 class="text-sm font-medium text-gray-700">Total Sales</h3>
+      <p id="total-sales" class="text-2xl font-bold text-indigo-600">0.00</p>
     </div>
-    <div class="bg-gray-700 p-4 rounded-md">
-      <h3 class="text-sm font-medium text-gray-300">Total Payments</h3>
-      <p id="total-payments" class="text-2xl font-bold text-teal-400">0.00</p>
+    <div class="bg-gray-100 p-4 rounded-md">
+      <h3 class="text-sm font-medium text-gray-700">Total Payments</h3>
+      <p id="total-payments" class="text-2xl font-bold text-indigo-600">0.00</p>
     </div>
-    <div class="bg-gray-700 p-4 rounded-md">
-      <h3 class="text-sm font-medium text-gray-300">Total Balance</h3>
-      <p id="total-balance" class="text-2xl font-bold text-teal-400">0.00</p>
+    <div class="bg-gray-100 p-4 rounded-md">
+      <h3 class="text-sm font-medium text-gray-700">Total Balance</h3>
+      <p id="total-balance" class="text-2xl font-bold text-indigo-600">0.00</p>
     </div>
   </div>
   <div class="space-y-4">
     <div>
       <label for="sales-date-filter" class="form-label">Filter Sales by Date</label>
-      <input type="text" id="sales-date-filter" class="form-input">
+      <input type="text" id="sales-date-filter" class="form-input" autocomplete="off">
     </div>
-    <div class="flex space-x-4">
+    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
       <div class="flex-1">
         <label for="sales-month-filter" class="form-label">Filter by Month</label>
-        <input type="month" id="sales-month-filter" class="form-input">
+        <input type="month" id="sales-month-filter" class="form-input" autocomplete="off">
       </div>
       <div class="flex-1">
         <label for="sales-year-filter" class="form-label">Filter by Year</label>
-        <input type="number" id="sales-year-filter" class="form-input">
+        <input type="number" id="sales-year-filter" class="form-input" autocomplete="off">
       </div>
     </div>
   </div>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <h3 class="text-sm font-medium text-gray-300">Sales by Date</h3>
-      <canvas id="sales-chart" class="bg-gray-700 p-4 rounded-md"></canvas>
+    <div class="relative h-64">
+      <h3 class="text-sm font-medium text-gray-700">Sales by Date</h3>
+      <canvas id="sales-chart" class="bg-gray-100 p-4 rounded-md"></canvas>
     </div>
-    <div>
-      <h3 class="text-sm font-medium text-gray-300">Sales per Customer</h3>
-      <canvas id="sales-per-customer-chart" class="bg-gray-700 p-4 rounded-md"></canvas>
+    <div class="relative h-64">
+      <h3 class="text-sm font-medium text-gray-700">Sales per Customer</h3>
+      <canvas id="sales-per-customer-chart" class="bg-gray-100 p-4 rounded-md"></canvas>
     </div>
-    <div>
-      <h3 class="text-sm font-medium text-gray-300">Payments per Customer</h3>
-      <canvas id="payment-per-customer-chart" class="bg-gray-700 p-4 rounded-md"></canvas>
+    <div class="relative h-64">
+      <h3 class="text-sm font-medium text-gray-700">Payments per Customer</h3>
+      <canvas id="payment-per-customer-chart" class="bg-gray-100 p-4 rounded-md"></canvas>
     </div>
-    <div>
-      <h3 class="text-sm font-medium text-gray-300">Balance by Customer</h3>
-      <canvas id="balance-chart" class="bg-gray-700 p-4 rounded-md"></canvas>
+    <div class="relative h-64">
+      <h3 class="text-sm font-medium text-gray-700">Balance by Customer</h3>
+      <canvas id="balance-chart" class="bg-gray-100 p-4 rounded-md"></canvas>
     </div>
   </div>
   <div id="loading-spinner-dashboard" class="hidden text-center">
-    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-600"></div>
+    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
   </div>
 </div>

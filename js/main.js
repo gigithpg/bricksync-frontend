@@ -8,10 +8,12 @@ async function loadTabContent(tab) {
   logLayout(`Attempting to load tab content: ${tab}`);
   localStorage.setItem('activeTab', tab);
   const tabContent = document.getElementById('tab-content');
-  if (!tabContent) {
-    log('Tab content container not found', 'error');
+  const headerTitle = document.querySelector('header h2');
+  if (!tabContent || !headerTitle) {
+    log('Tab content container or header title not found', 'error');
     return;
   }
+  headerTitle.textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
   try {
     const response = await fetch(`partials/${tab}.html`);
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -53,7 +55,11 @@ async function loadTabContent(tab) {
     if (tab === 'logs') {
       const clearLogsButton = document.getElementById('clear-logs');
       if (clearLogsButton) {
-        clearLogsButton.addEventListener('click', () => clearLogs(loadData, renderFunctions));
+        clearLogsButton.addEventListener('click', () => {
+          if (window.confirm('Are you sure you want to clear all logs?')) {
+            clearLogs(loadData, renderFunctions);
+          }
+        });
         logLayout('Clear logs button listener added');
       } else {
         log('Clear logs button not found', 'error');
@@ -68,7 +74,7 @@ async function loadTabContent(tab) {
     }
   } catch (e) {
     log(`Error loading tab content ${tab}: ${e.message}`, 'error');
-    tabContent.innerHTML = `<p class="text-red-400 p-4">Error loading ${tab} content: ${e.message}. Please check Settings.</p>`;
+    tabContent.innerHTML = `<p class="text-red-600 p-4">Error loading ${tab} content: ${e.message}. Please check Settings.</p>`;
     showToast(`Error loading ${tab}: ${e.message}. Please check Settings.`);
   }
 }
@@ -94,10 +100,10 @@ function setupEventListeners() {
       button.addEventListener('click', async () => {
         logLayout(`Switching to tab: ${button.dataset.tab}`);
         document.querySelectorAll('.tab-button').forEach(btn => {
-          btn.classList.remove('active', 'bg-teal-600', 'text-white', 'md:bg-teal-700', 'md:text-gray-100');
+          btn.classList.remove('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-500', 'md:text-white');
           logLayout(`Removed active classes from button: ${btn.dataset.tab}`);
         });
-        button.classList.add('active', 'bg-teal-600', 'text-white', 'md:bg-teal-700', 'md:text-gray-100');
+        button.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-500', 'md:text-white');
         logLayout(`Added active classes to button: ${button.dataset.tab}`);
         if (window.innerWidth < 768) {
           toggleSidebar(false);
@@ -126,11 +132,23 @@ function setupEventListeners() {
 
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('delete-customer')) {
-      deleteCustomer(e.target.dataset.name, loadData, renderFunctions).then(() => showToast('Customer deleted successfully')).catch(e => showToast(e.message));
+      if (window.confirm(`Are you sure you want to delete customer ${e.target.dataset.name}?`)) {
+        deleteCustomer(e.target.dataset.name, loadData, renderFunctions)
+          .then(() => showToast('Customer deleted successfully'))
+          .catch(e => showToast(e.message));
+      }
     } else if (e.target.classList.contains('delete-sale')) {
-      deleteSale(e.target.dataset.id, loadData, renderFunctions).then(() => showToast('Sale deleted successfully')).catch(e => showToast(e.message));
+      if (window.confirm(`Are you sure you want to delete sale ${e.target.dataset.id}?`)) {
+        deleteSale(e.target.dataset.id, loadData, renderFunctions)
+          .then(() => showToast('Sale deleted successfully'))
+          .catch(e => showToast(e.message));
+      }
     } else if (e.target.classList.contains('delete-payment')) {
-      deletePayment(e.target.dataset.id, loadData, renderFunctions).then(() => showToast('Payment deleted successfully')).catch(e => showToast(e.message));
+      if (window.confirm(`Are you sure you want to delete payment ${e.target.dataset.id}?`)) {
+        deletePayment(e.target.dataset.id, loadData, renderFunctions)
+          .then(() => showToast('Payment deleted successfully'))
+          .catch(e => showToast(e.message));
+      }
     }
   });
 
@@ -169,11 +187,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     const activeTab = localStorage.getItem('activeTab') || 'dashboard';
     document.querySelectorAll('.tab-button').forEach(btn => {
-      btn.classList.remove('active', 'bg-teal-600', 'text-white', 'md:bg-teal-700', 'md:text-gray-100');
+      btn.classList.remove('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-500', 'md:text-white');
     });
     const activeButton = document.querySelector(`.tab-button[data-tab="${activeTab}"]`);
     if (activeButton) {
-      activeButton.classList.add('active', 'bg-teal-600', 'text-white', 'md:bg-teal-700', 'md:text-gray-100');
+      activeButton.classList.add('active', 'bg-indigo-600', 'text-white', 'md:bg-indigo-500', 'md:text-white');
     }
     await loadTabContent(activeTab);
   }

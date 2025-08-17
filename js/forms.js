@@ -262,34 +262,40 @@ export function setupFormListeners(tab, renderFunctions) {
     const settingsForm = document.getElementById('settings-form');
     if (settingsForm) {
       settingsForm.reset();
+      const savedDeviceType = localStorage.getItem('device-type');
+      if (savedDeviceType) {
+        const radio = settingsForm.querySelector(`input[name="device-type"][value="${savedDeviceType}"]`);
+        if (radio) radio.checked = true;
+      }
       settingsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitButton = settingsForm.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         submitButton.textContent = 'Saving...';
         settingsForm.classList.add('opacity-50', 'pointer-events-none');
-        const deviceType = document.querySelector('input[name="device-type"]:checked')?.value;
-        log(`Submitting settings form: Device Type ${deviceType}`);
+        const deviceType = settingsForm.querySelector('input[name="device-type"]:checked')?.value;
+        log(`Submitting settings form: deviceType=${deviceType}`);
         if (!deviceType) {
-          log('Device type is empty', 'error');
           showToast('Please select a device type');
           submitButton.disabled = false;
           submitButton.textContent = 'Save';
           settingsForm.classList.remove('opacity-50', 'pointer-events-none');
           return;
         }
-        const apiUrl = deviceType === 'mobile' ? 'http://localhost:3000' : 'http://192.168.1.125:3000';
         try {
-          localStorage.setItem(API_BASE_KEY, apiUrl);
+          const newApi = deviceType === 'mobile' ? 'http://localhost:3000' : 'http://192.168.1.125:3000';
+          localStorage.setItem(API_BASE_KEY, newApi);
           localStorage.setItem('device-type', deviceType);
-          API = apiUrl;
-          localStorage.setItem('apiValid', apiUrl);
-          log(`API URL updated to ${apiUrl}`);
+          API = newApi;
+          const apiValid = await fetch(`${API}/customers`, { method: 'GET', signal: AbortSignal.timeout(5000) });
+          if (!apiValid.ok) throw new Error('API unreachable');
+          localStorage.setItem('apiValid', API);
+          log(`Settings saved: deviceType=${deviceType}, API=${API}`);
           showToast('Settings saved successfully');
-          await loadData('dashboard', renderFunctions);
-          document.querySelector('.tab-button[data-tab="dashboard"]').click();
+          settingsForm.reset();
+          await loadData('settings', renderFunctions);
         } catch (e) {
-          log(`Error updating settings: ${e.message}`, 'error');
+          log(`Error saving settings: ${e.message}`, 'error');
           showToast(`Error: ${e.message}`);
         } finally {
           submitButton.disabled = false;
@@ -298,16 +304,6 @@ export function setupFormListeners(tab, renderFunctions) {
         }
       });
       logLayout('Settings form listener added');
-      const deviceTypeInputs = document.querySelectorAll('input[name="device-type"]');
-      if (deviceTypeInputs.length) {
-        const savedDeviceType = localStorage.getItem('device-type');
-        if (savedDeviceType) {
-          document.querySelector(`input[name="device-type"][value="${savedDeviceType}"]`).checked = true;
-        }
-        logLayout(`Device type initialized: ${savedDeviceType || 'none'}`);
-      } else {
-        log('Device type inputs not found', 'error');
-      }
     } else {
       log('Settings form not found', 'error');
     }
@@ -319,47 +315,30 @@ export function setupDeviceModalListener(renderFunctions) {
   if (deviceForm) {
     deviceForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const submitButton = deviceForm.querySelector('button[type="submit"]');
-      submitButton.disabled = true;
-      submitButton.textContent = 'Saving...';
-      deviceForm.classList.add('opacity-50', 'pointer-events-none');
-      const deviceType = document.querySelector('input[name="device-type"]:checked')?.value;
-      log(`Submitting device selection: ${deviceType}`);
+      const deviceType = deviceForm.querySelector('input[name="device-type"]:checked')?.value;
+      log(`Submitting device form: deviceType=${deviceType}`);
       if (!deviceType) {
-        log('Device type is empty', 'error');
         showToast('Please select a device type');
-        submitButton.disabled = false;
-        submitButton.textContent = 'Continue';
-        deviceForm.classList.remove('opacity-50', 'pointer-events-none');
         return;
       }
-      const apiUrl = deviceType === 'mobile' ? 'http://localhost:3000' : 'http://192.168.1.125:3000';
       try {
-        localStorage.setItem(API_BASE_KEY, apiUrl);
+        const newApi = deviceType === 'mobile' ? 'http://localhost:3000' : 'http://192.168.1.125:3000';
+        localStorage.setItem(API_BASE_KEY, newApi);
         localStorage.setItem('device-type', deviceType);
-        API = apiUrl;
-        localStorage.setItem('apiValid', apiUrl);
-        log(`API URL set to ${apiUrl}`);
-        showToast('Device type saved successfully');
+        API = newApi;
+        const apiValid = await fetch(`${API}/customers`, { method: 'GET', signal: AbortSignal.timeout(5000) });
+        if (!apiValid.ok) throw new Error('API unreachable');
+        localStorage.setItem('apiValid', API);
+        log(`Device type saved: ${deviceType}, API=${API}`);
         document.getElementById('device-modal').classList.add('hidden');
         await loadData('dashboard', renderFunctions);
-        document.querySelector('.tab-button[data-tab="dashboard"]').click();
       } catch (e) {
         log(`Error setting device type: ${e.message}`, 'error');
-        showToast(`Error: ${e.message}. Please try again in Settings.`);
-      } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Continue';
-        deviceForm.classList.remove('opacity-50', 'pointer-events-none');
+        showToast(`Error: ${e.message}`);
       }
     });
-    logLayout('Device modal form listener added');
-    const savedDeviceType = localStorage.getItem('device-type');
-    if (savedDeviceType) {
-      const radio = document.querySelector(`input[name="device-type"][value="${savedDeviceType}"]`);
-      if (radio) radio.checked = true;
-    }
+    logLayout('Device modal listener added');
   } else {
-    log('Device modal form not found', 'error');
+    log('Device form not found', 'error');
   }
 }

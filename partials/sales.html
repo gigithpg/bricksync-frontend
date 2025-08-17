@@ -1,33 +1,33 @@
-<div class="bg-gray-800 p-6 rounded-lg shadow-md space-y-6 mobile-form">
-  <h2 class="text-xl font-bold text-gray-100">Sales</h2>
+<div class="bg-white p-6 rounded-lg shadow-md space-y-6 mobile-form">
+  <h2 class="text-xl font-bold text-gray-900">Sales</h2>
   <form id="sales-form" class="space-y-4">
     <div>
       <label for="sale-customer" class="form-label">Customer</label>
-      <select id="sale-customer" name="Customer Name" class="form-input" required></select>
+      <select id="sale-customer" name="Customer Name" class="form-input" required autocomplete="off"></select>
     </div>
     <div>
       <label for="sale-date" class="form-label">Date</label>
-      <input type="text" id="sale-date" name="Date" class="form-input" required>
+      <input type="text" id="sale-date" name="Date" class="form-input" required autocomplete="off">
     </div>
     <div>
       <label for="sale-quantity" class="form-label">Quantity</label>
-      <input type="number" id="sale-quantity" name="Quantity" step="0.01" min="0" class="form-input" required>
+      <input type="number" id="sale-quantity" name="Quantity" step="0.01" min="0" class="form-input" required autocomplete="off">
     </div>
     <div>
       <label for="sale-rate" class="form-label">Rate</label>
-      <input type="number" id="sale-rate" name="Rate" step="0.01" min="0" class="form-input" required>
+      <input type="number" id="sale-rate" name="Rate" step="0.01" min="0" class="form-input" required autocomplete="off">
     </div>
     <div>
       <label for="sale-vehicle-rent" class="form-label">Vehicle Rent</label>
-      <input type="number" id="sale-vehicle-rent" name="Vehicle Rent" step="0.01" min="0" class="form-input">
+      <input type="number" id="sale-vehicle-rent" name="Vehicle Rent" step="0.01" min="0" class="form-input" autocomplete="off">
     </div>
     <div>
       <label for="sale-amount" class="form-label">Amount</label>
-      <input type="number" id="sale-amount" name="Amount" step="0.01" class="form-input" readonly>
+      <input type="number" id="sale-amount" name="Amount" step="0.01" class="form-input" readonly autocomplete="off">
     </div>
     <div>
       <label for="sale-payment-method" class="form-label">Payment Method</label>
-      <select id="sale-payment-method" name="Payment Method" class="form-input">
+      <select id="sale-payment-method" name="Payment Method" class="form-input" autocomplete="off">
         <option value="">None</option>
         <option value="Cash">Cash</option>
         <option value="Card">Card</option>
@@ -36,27 +36,25 @@
     </div>
     <div>
       <label for="sale-payment-received" class="form-label">Payment Received</label>
-      <input type="number" id="sale-payment-received" name="Payment Received" step="0.01" min="0" class="form-input">
+      <input type="number" id="sale-payment-received" name="Payment Received" step="0.01" min="0" class="form-input" autocomplete="off">
     </div>
     <div>
       <label for="sale-remarks" class="form-label">Remarks</label>
-      <input type="text" id="sale-remarks" name="Remarks" class="form-input">
+      <input type="text" id="sale-remarks" name="Remarks" class="form-input" autocomplete="off">
     </div>
     <div>
-      <button type="submit" class="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition-colors duration-200 w-full md:w-auto">Save</button>
+      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200 w-full md:w-auto">Save</button>
     </div>
   </form>
   <div>
     <label for="sales-table-filter-customer" class="form-label">Filter by Customer</label>
-    <select id="sales-table-filter-customer" class="form-input"></select>
+    <select id="sales-table-filter-customer" class="form-input" autocomplete="off"></select>
   </div>
-  <div class="table-container">
-    <table id="sales-table" class="min-w-full bg-gray-800 divide-y divide-gray-600">
-      <thead class="bg-gray-700"></thead>
-      <tbody class="divide-y divide-gray-600"></tbody>
-    </table>
-  </div>
+  <table id="sales-table" class="table bg-white divide-y divide-gray-200">
+    <thead class="bg-gray-100"></thead>
+    <tbody class="divide-y divide-gray-200"></tbody>
+  </table>
   <div id="loading-spinner-sales" class="hidden text-center">
-    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-600"></div>
+    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
   </div>
 </div>

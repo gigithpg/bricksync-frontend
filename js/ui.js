@@ -32,7 +32,7 @@ export function renderTable(tableId, data, activeTab, sortBy = null, sortOrder =
     return;
   }
   if (!data.length) {
-    table.innerHTML = '<tr><td colspan="100" class="border px-6 py-4 text-center text-gray-500">No data</td></tr>';
+    table.innerHTML = '<tr><td colspan="100" class="border px-4 py-2 text-center text-gray-500">No data</td></tr>';
     log(`No data for table ${tableId}`);
     return;
   }
@@ -46,19 +46,19 @@ export function renderTable(tableId, data, activeTab, sortBy = null, sortOrder =
   }
   const headers = Object.keys(data[0]);
   table.innerHTML = `
-    <thead class="bg-gray-700">
-      <tr>${headers.map(h => `<th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer" data-sort="${h}">${h}${h === 'Date' ? `<span class="ml-2">${sortBy === 'Date' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}</span>` : ''}</th>`).join('')}${tableId.includes('customer') || tableId.includes('sale') || tableId.includes('payment') ? '<th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>' : ''}</tr>
+    <thead class="bg-gray-100">
+      <tr>${headers.map(h => `<th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer truncate" data-sort="${h}">${h}${h === 'Date' ? `<span class="ml-2">${sortBy === 'Date' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}</span>` : ''}</th>`).join('')}${tableId.includes('customer') || tableId.includes('sale') || tableId.includes('payment') ? '<th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>' : ''}</tr>
     </thead>
-    <tbody class="bg-gray-800 divide-y divide-gray-600">${sortedData.map(row => `
+    <tbody class="bg-white divide-y divide-gray-200">${sortedData.map(row => `
       <tr>${headers.map(h => {
         if (h === 'Pending Balance') {
           const value = row[h];
           const formatted = value >= 0 ? `+${value.toFixed(2)}` : value.toFixed(2);
-          const color = value < 0 ? 'text-red-400' : 'text-teal-400';
-          return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-100 ${color}">${formatted}</td>`;
+          const color = value < 0 ? 'text-red-600' : 'text-indigo-600';
+          return `<td class="px-4 py-2 text-sm text-gray-900 ${color} truncate">${formatted}</td>`;
         }
-        return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-100">${row[h]}</td>`;
-      }).join('')}${tableId.includes('customer') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-customer" data-name="${row['Customer Name']}">Delete</button></td>` : ''}${tableId.includes('sale') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-sale" data-id="${row['Sale ID']}">Delete</button></td>` : ''}${tableId.includes('payment') ? `<td class="px-6 py-4 whitespace-nowrap"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-payment" data-id="${row['Payment ID']}">Delete</button></td>` : ''}</tr>
+        return `<td class="px-4 py-2 text-sm text-gray-900 truncate">${row[h]}</td>`;
+      }).join('')}${tableId.includes('customer') ? `<td class="px-4 py-2"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-customer" data-name="${row['Customer Name']}">Delete</button></td>` : ''}${tableId.includes('sale') ? `<td class="px-4 py-2"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-sale" data-id="${row['Sale ID']}">Delete</button></td>` : ''}${tableId.includes('payment') ? `<td class="px-4 py-2"><button class="bg-red-600 text-white px-2 py-1 rounded-md hover:bg-red-700 transition-colors delete-payment" data-id="${row['Payment ID']}">Delete</button></td>` : ''}</tr>
     `).join('')}</tbody>
   `;
 }
@@ -99,7 +99,7 @@ export function renderLogs(logs) {
     return;
   }
   logList.innerHTML = logs.map(log => `
-    <li class="text-sm text-gray-300">${log.Timestamp}: ${log.Message}</li>
+    <li class="text-sm text-gray-700">${log.Timestamp}: ${log.Message}</li>
   `).join('');
   logLayout('Logs rendered successfully');
 }
@@ -123,8 +123,8 @@ export function renderDashboardCharts(balances, sales, payments) {
   const balanceChartCanvas = document.getElementById('balance-chart');
 
   const chartColors = {
-    background: 'rgba(13, 148, 136, 0.2)', // Teal with opacity
-    border: 'rgba(13, 148, 136, 1)', // Solid teal
+    background: 'rgba(99, 102, 241, 0.2)', // Indigo with opacity
+    border: 'rgba(99, 102, 241, 1)', // Solid indigo
   };
 
   if (salesChartCanvas && sales.length) {
@@ -173,11 +173,12 @@ export function renderDashboardCharts(balances, sales, payments) {
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           scales: {
-            x: { title: { display: true, text: 'Date', color: '#d1d5db' } },
-            y: { title: { display: true, text: 'Amount', color: '#d1d5db' }, beginAtZero: true },
+            x: { title: { display: true, text: 'Date', color: '#4b5563' } },
+            y: { title: { display: true, text: 'Amount', color: '#4b5563' }, beginAtZero: true },
           },
-          plugins: { legend: { labels: { color: '#d1d5db' } } },
+          plugins: { legend: { labels: { color: '#4b5563' } } },
         },
       });
     };
@@ -212,11 +213,12 @@ export function renderDashboardCharts(balances, sales, payments) {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         scales: {
-          x: { title: { display: true, text: 'Customer', color: '#d1d5db' } },
-          y: { title: { display: true, text: 'Amount', color: '#d1d5db' }, beginAtZero: true },
+          x: { title: { display: true, text: 'Customer', color: '#4b5563' } },
+          y: { title: { display: true, text: 'Amount', color: '#4b5563' }, beginAtZero: true },
         },
-        plugins: { legend: { labels: { color: '#d1d5db' } } },
+        plugins: { legend: { labels: { color: '#4b5563' } } },
       },
     });
     logLayout('Sales per customer chart rendered');
@@ -245,11 +247,12 @@ export function renderDashboardCharts(balances, sales, payments) {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         scales: {
-          x: { title: { display: true, text: 'Customer', color: '#d1d5db' } },
-          y: { title: { display: true, text: 'Amount', color: '#d1d5db' }, beginAtZero: true },
+          x: { title: { display: true, text: 'Customer', color: '#4b5563' } },
+          y: { title: { display: true, text: 'Amount', color: '#4b5563' }, beginAtZero: true },
         },
-        plugins: { legend: { labels: { color: '#d1d5db' } } },
+        plugins: { legend: { labels: { color: '#4b5563' } } },
       },
     });
     logLayout('Payments per customer chart rendered');
@@ -267,18 +270,19 @@ export function renderDashboardCharts(balances, sales, payments) {
         datasets: [{
           label: 'Balance by Customer',
           data,
-          backgroundColor: data.map(value => value >= 0 ? 'rgba(13, 148, 136, 0.2)' : 'rgba(239, 68, 68, 0.2)'),
-          borderColor: data.map(value => value >= 0 ? 'rgba(13, 148, 136, 1)' : 'rgba(239, 68, 68, 1)'),
+          backgroundColor: data.map(value => value >= 0 ? 'rgba(99, 102, 241, 0.2)' : 'rgba(239, 68, 68, 0.2)'),
+          borderColor: data.map(value => value >= 0 ? 'rgba(99, 102, 241, 1)' : 'rgba(239, 68, 68, 1)'),
           borderWidth: 1,
         }],
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         scales: {
-          x: { title: { display: true, text: 'Customer', color: '#d1d5db' } },
-          y: { title: { display: true, text: 'Balance', color: '#d1d5db' } },
+          x: { title: { display: true, text: 'Customer', color: '#4b5563' } },
+          y: { title: { display: true, text: 'Balance', color: '#4b5563' } },
         },
-        plugins: { legend: { labels: { color: '#d1d5db' } } },
+        plugins: { legend: { labels: { color: '#4b5563' } } },
       },
     });
     logLayout('Balance chart rendered');
