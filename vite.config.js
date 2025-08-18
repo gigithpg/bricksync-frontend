@@ -1,5 +1,7 @@
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
 
 export default defineConfig({
   root: resolve(__dirname, 'src'),
@@ -13,7 +15,7 @@ export default defineConfig({
   },
   css: {
     postcss: {
-      plugins: [require('tailwindcss')({ config: './tailwind.config.js' }), require('autoprefixer')]
+      plugins: [tailwindcss('./tailwind.config.js'), autoprefixer]
     }
   }
 });
