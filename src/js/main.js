@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const savedDeviceType = localStorage.getItem('device-type');
   if (!savedDeviceType) {
     document.getElementById('device-modal').classList.remove('hidden');
+    setupDeviceModalListener(renderFunctions); // Add listener for initial modal
   } else {
     loadTabContent('dashboard', renderFunctions);
   }

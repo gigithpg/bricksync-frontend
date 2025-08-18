@@ -10,14 +10,14 @@ export function updateSaleAmount() {
   const amountInput = document.getElementById('sale-amount');
   if (amountInput) {
     amountInput.value = (qty * rate + rent).toFixed(2);
-    log(`Updated sale amount: ${(qty * rate + rent).toFixed(2)}`); // Replaced logLayout with log
+    log(`Updated sale amount: ${(qty * rate + rent).toFixed(2)}`);
   } else {
     log('Sale amount input not found', 'error');
   }
 }
 
 export function setupFormListeners(tab, renderFunctions) {
-  log(`Setting up form listeners for tab: ${tab}`); // Replaced logLayout with log
+  log(`Setting up form listeners for tab: ${tab}`);
   if (tab === 'customers') {
     const customerForm = document.getElementById('customer-form');
     if (customerForm) {
@@ -58,12 +58,11 @@ export function setupFormListeners(tab, renderFunctions) {
           customerForm.classList.remove('opacity-50', 'pointer-events-none');
         }
       });
-      log('Customer form listener added'); // Replaced logLayout with log
+      log('Customer form listener added');
     } else {
       log('Customer form not found', 'error');
     }
   }
-  // ... (rest of the file remains unchanged, update other logLayout calls to log similarly)
   if (tab === 'settings') {
     const settingsForm = document.getElementById('settings-form');
     if (settingsForm) {
@@ -103,7 +102,7 @@ export function setupFormListeners(tab, renderFunctions) {
           settingsForm.classList.remove('opacity-50', 'pointer-events-none');
         }
       });
-      log('Settings form listener added'); // Replaced logLayout with log
+      log('Settings form listener added');
     } else {
       log('Settings form not found', 'error');
     }
@@ -121,23 +120,31 @@ export function setupDeviceModalListener(renderFunctions) {
         showToast('Please select a device type');
         return;
       }
+      const spinner = showLoadingSpinner();
       try {
         const newApi = deviceType === 'mobile' ? 'http://localhost:3000' : 'http://192.168.1.125:3000';
         localStorage.setItem(API_BASE_KEY, newApi);
         localStorage.setItem('device-type', deviceType);
         API = newApi;
+        log(`Attempting to validate API: ${API}/customers`);
         const apiValid = await fetch(`${API}/customers`, { method: 'GET', signal: AbortSignal.timeout(5000) });
-        if (!apiValid.ok) throw new Error('API unreachable');
+        if (!apiValid.ok) {
+          const errorText = await apiValid.text();
+          throw new Error(`API unreachable: ${errorText}`);
+        }
         localStorage.setItem('apiValid', API);
         log(`Device type saved: ${deviceType}, API=${API}`);
+        showToast('Device type saved successfully');
         document.getElementById('device-modal').classList.add('hidden');
         await loadData('dashboard', renderFunctions);
       } catch (e) {
         log(`Error setting device type: ${e.message}`, 'error');
         showToast(`Error: ${e.message}`);
+      } finally {
+        hideLoadingSpinner(spinner);
       }
     });
-    log('Device modal listener added'); // Replaced logLayout with log
+    log('Device modal listener added');
   } else {
     log('Device form not found', 'error');
   }
