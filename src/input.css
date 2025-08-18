@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { @apply bg-gray-50 text-gray-900 font-sans; }
+.table { @apply w-full table-auto; }
+.btn { @apply bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700; }
+
+@layer components {
+  .tk-modal { @apply fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center; }
+  .tk-modal-content { @apply bg-white p-6 rounded-lg shadow-lg; }
+}

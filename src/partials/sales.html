@@ -1,0 +1,31 @@
+<div class="p-4 space-y-6">
+  <form id="sales-form" class="space-y-4">
+    <select id="sale-customer" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900"></select>
+    <input id="sale-date" type="text" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900 flatpickr" placeholder="Date" />
+    <input id="sale-quantity" type="number" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900" placeholder="Quantity" />
+    <input id="sale-rate" type="number" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900" placeholder="Rate" />
+    <input id="sale-vehicle-rent" type="number" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900" placeholder="Vehicle Rent" />
+    <input id="sale-amount" type="number" readonly class="w-full p-2 border border-gray-300 rounded text-gray-900 bg-gray-100" placeholder="Amount" />
+    <select id="sale-payment-method" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900">
+      <option value="">Select Payment Method</option>
+      <option value="Cash">Cash</option>
+      <option value="Card">Card</option>
+    </select>
+    <input id="sale-payment-received" type="number" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900" placeholder="Payment Received" />
+    <input id="sale-remarks" type="text" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900" placeholder="Remarks" />
+    <button type="submit" class="btn">Save</button>
+  </form>
+  <table id="sales-table" class="w-full table-auto text-left">
+    <thead>
+      <tr class="bg-gray-100 text-gray-700">
+        <th class="px-4 py-2 min-w-[100px] truncate">Customer</th>
+        <th class="px-4 py-2 min-w-[100px] truncate">Date</th>
+        <th class="px-4 py-2 min-w-[100px] truncate">Quantity</th>
+        <th class="px-4 py-2 min-w-[100px] truncate">Rate</th>
+        <th class="px-4 py-2 min-w-[100px] truncate">Amount</th>
+        <th class="px-4 py-2 min-w-[100px] truncate">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="sales-table-body"></tbody>
+  </table>
+</div>

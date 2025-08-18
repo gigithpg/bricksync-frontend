@@ -1,24 +1,32 @@
 {
-  "name": "bricksync-frontend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "tailkit-starter-kit-html-vite",
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/gigithpg/bricksync-frontend.git"
+  "prettier": {
+    "tailwindStylesheet": "./src/assets/css/tailkit.css",
+    "plugins": [
+      "prettier-plugin-tailwindcss"
+    ]
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/gigithpg/bricksync-frontend/issues"
-  },
-  "homepage": "https://github.com/gigithpg/bricksync-frontend#readme",
   "devDependencies": {
-    "live-server": "^1.2.2"
+    "@tailwindcss/forms": "^0.5.9",
+    "@tailwindcss/typography": "^0.5.16",
+    "@tailwindcss/vite": "^4.1.11",
+    "autoprefixer": "^10.4.20",
+    "chart.js": "^4.4.4",
+    "flatpickr": "^4.6.13",
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.8",
+    "tailwindcss": "^3.4.10",
+    "vite": "^5.4.8"
+  },
+  "dependencies": {
+    "@alpinejs/focus": "^3.14.9",
+    "alpinejs": "^3.14.9"
   }
 }

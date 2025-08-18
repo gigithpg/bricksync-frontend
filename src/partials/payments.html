@@ -1,0 +1,26 @@
+<div class="p-4 space-y-6">
+  <form id="payment-form" class="space-y-4">
+    <select id="payment-customer" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900"></select>
+    <input id="payment-date" type="text" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900 flatpickr" placeholder="Date" />
+    <select id="payment-method" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900">
+      <option value="">Select Payment Method</option>
+      <option value="Cash">Cash</option>
+      <option value="Card">Card</option>
+    </select>
+    <input id="payment-received" type="number" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900" placeholder="Payment Received" />
+    <input id="payment-remarks" type="text" autocomplete="off" class="w-full p-2 border border-gray-300 rounded text-gray-900" placeholder="Remarks" />
+    <button type="submit" class="btn">Save</button>
+  </form>
+  <table id="payments-table" class="w-full table-auto text-left">
+    <thead>
+      <tr class="bg-gray-100 text-gray-700">
+        <th class="px-4 py-2 min-w-[100px] truncate">Customer</th>
+        <th class="px-4 py-2 min-w-[100px] truncate">Date</th>
+        <th class="px-4 py-2 min-w-[100px] truncate">Amount</th>
+        <th class="px-4 py-2 min-w-[100px] truncate">Method</th>
+        <th class="px-4 py-2 min-w-[100px] truncate">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="payments-table-body"></tbody>
+  </table>
+</div>
