@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrickSync</title>
+  <link href="/assets/css/flatpickr.min.css" rel="stylesheet">
+  <script src="/flatpickr.min.js"></script>
+  <script src="/chart.min.js"></script>
+  <script type="module" crossorigin src="/assets/main-BH52BX5M.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-ChbwgQ_0.css">
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+  <div class="flex min-h-screen">
+    <nav class="w-64 bg-white shadow p-4">
+      <h1 class="text-2xl font-bold text-indigo-600">BrickSync</h1>
+      <ul class="mt-4 space-y-2">
+        <li><a href="#" data-tab="dashboard" class="block p-2 hover:bg-indigo-100">Dashboard</a></li>
+        <li><a href="#" data-tab="customers" class="block p-2 hover:bg-indigo-100">Customers</a></li>
+        <li><a href="#" data-tab="sales" class="block p-2 hover:bg-indigo-100">Sales</a></li>
+        <li><a href="#" data-tab="payments" class="block p-2 hover:bg-indigo-100">Payments</a></li>
+        <li><a href="#" data-tab="transactions" class="block p-2 hover:bg-indigo-100">Transactions</a></li>
+        <li><a href="#" data-tab="balances" class="block p-2 hover:bg-indigo-100">Balances</a></li>
+        <li><a href="#" data-tab="logs" class="block p-2 hover:bg-indigo-100">Logs</a></li>
+        <li><a href="#" data-tab="settings" class="block p-2 hover:bg-indigo-100">Settings</a></li>
+      </ul>
+    </nav>
+    <main class="flex-1 p-4">
+      <h2 class="text-2xl font-semibold text-gray-900">Dashboard</h2>
+      <div id="content"></div>
+    </main>
+  </div>
+  <div id="device-modal" class="tk-modal hidden">
+    <div class="tk-modal-content">
+      <h2 class="text-lg font-semibold text-gray-900">Select Device Type</h2>
+      <form id="device-form" class="mt-4 space-y-4">
+        <div>
+          <label class="text-gray-900 font-semibold">Device Type</label>
+          <div class="mt-2 space-y-2">
+            <label class="flex items-center">
+              <input type="radio" name="device-type" value="mobile" class="mr-2 text-indigo-600 focus:ring-indigo-600" />
+              <span class="text-gray-900">Mobile</span>
+            </label>
+            <label class="flex items-center">
+              <input type="radio" name="device-type" value="desktop" class="mr-2 text-indigo-600 focus:ring-indigo-600" />
+              <span class="text-gray-900">Desktop</span>
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn">Save</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
