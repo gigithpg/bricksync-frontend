@@ -1,4 +1,3 @@
-import Chart from 'chart.js/auto';
 import { showDeleteModal } from './main.js';
 
 export function showToast(message) {
@@ -68,8 +67,7 @@ export function renderPayments(data, renderFunctions) {
     row.innerHTML = `
       <td class="px-4 py-2 truncate">${payment['Customer Name']}</td>
       <td class="px-4 py-2 truncate">${payment.Date}</td>
-      <td class="px-4 py-2 truncate">${payment['Payment Received']}</td>
-      <td class="px-4 py-2 truncate">${payment['Payment Method']}</td>
+      <td class="px-4 py-2 truncate">${payment.Amount}</td>
       <td class="px-4 py-2">
         <button class="btn bg-red-600 hover:bg-red-700" data-id="${payment.id}">Delete</button>
       </td>
@@ -129,7 +127,7 @@ export function renderLogs(data) {
 
 export function renderDashboard(data) {
   document.getElementById('total-balance').textContent = data.totalBalance || 0;
-  new Chart(document.getElementById('balance-chart'), {
+  new window.Chart(document.getElementById('balance-chart'), {
     type: 'bar',
     data: {
       labels: data.balances.map(b => b['Customer Name']),
